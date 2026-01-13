@@ -55,39 +55,28 @@ export const getLogoUrl = (symbol: string) => {
   return `https://img.logo.dev/ticker/${symbol}?token=${LOGO_DEV_PUBLIC_KEY}`;
 };
 
-// --- REAL DATA FETCHING ---
+// --- REAL DATA FETCHING VIA PROXY ---
 
 export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
   if (symbols.length === 0) {
     symbols = currentStocks.map(s => s.symbol);
   }
 
-  // 1. Try Yahoo Finance (JSON)
-  try {
-    const symbolStr = symbols.join(',');
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`;
-    
-    const response = await fetch(url);
-    if (response.ok) {
-      const data = await response.json();
-      const results = data.quoteResponse?.result;
-      if (results && results.length > 0) {
-        updateStocksFromYahoo(results);
-        notifyListeners();
-        return; // Success, stop here.
-      }
-    }
-  } catch (error) {
-    // Silent fail for Yahoo, try fallback
-  }
+  // Ensure .US suffix for Stooq US stocks if missing
+  const stooqSymbols = symbols.map(s => {
+    // Simple heuristic: if it's all letters and no dot, assume US.
+    return (s.match(/^[A-Z]+$/) && !s.includes('.')) ? `${s}.US` : s;
+  }).join(',');
 
-  // 2. Fallback to Stooq (CSV)
   try {
-    const stooqSymbols = symbols.map(s => s.toUpperCase().endsWith('.US') ? s : `${s}.US`).join(',');
-    // f=sd2t2ohlcv : Symbol, Date, Time, Open, High, Low, Close, Volume
-    const url = `https://stooq.com/q/l/?s=${stooqSymbols}&f=sd2t2ohlcv&e=csv`;
+    // Call internal API proxy to bypass CORS
+    const response = await fetch(`/api/quote?symbols=${stooqSymbols}`);
     
-    const response = await fetch(url);
+    if (!response.ok) {
+      // If running locally without 'vercel dev', this might 404
+      throw new Error(`Proxy error: ${response.status}`);
+    }
+    
     const csvText = await response.text();
     
     const parsed = Papa.parse(csvText, {
@@ -101,50 +90,27 @@ export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
       notifyListeners();
     }
   } catch (error) {
-    console.error("All data sources failed.", error);
+    console.error("Failed to fetch quotes via proxy.", error);
   }
 };
-
-function updateStocksFromYahoo(results: any[]) {
-  results.forEach((apiStock: any) => {
-    const index = currentStocks.findIndex(s => s.symbol === apiStock.symbol);
-    const domain = getDomainFromSymbol(apiStock.symbol);
-    
-    const newStockData: StockData = {
-      symbol: apiStock.symbol,
-      shortName: apiStock.shortName || apiStock.longName || apiStock.symbol,
-      domain: domain,
-      regularMarketPrice: apiStock.regularMarketPrice || 0,
-      regularMarketChange: apiStock.regularMarketChange || 0,
-      regularMarketChangePercent: apiStock.regularMarketChangePercent || 0,
-      regularMarketOpen: apiStock.regularMarketOpen || 0,
-      regularMarketDayHigh: apiStock.regularMarketDayHigh || 0,
-      regularMarketDayLow: apiStock.regularMarketDayLow || 0,
-      regularMarketVolume: apiStock.regularMarketVolume || 0,
-    };
-
-    if (index > -1) {
-      currentStocks[index] = newStockData;
-    } else {
-      currentStocks.push(newStockData);
-    }
-  });
-}
 
 function updateStocksFromStooq(rows: any[]) {
   // Stooq CSV row: [Symbol, Date, Time, Open, High, Low, Close, Volume]
   rows.forEach((row: any) => {
     if (!Array.isArray(row) || row.length < 7) return;
 
+    // Clean symbol (remove .US) for internal matching
     const rawSymbol = (row[0] as string || '').replace('.US', '');
     if (!rawSymbol) return;
 
+    // Parse values, defaulting to 0 if missing
     const close = typeof row[6] === 'number' ? row[6] : 0;
     const open = typeof row[3] === 'number' ? row[3] : 0;
     const high = typeof row[4] === 'number' ? row[4] : 0;
     const low = typeof row[5] === 'number' ? row[5] : 0;
     const volume = typeof row[7] === 'number' ? row[7] : 0;
 
+    // Calculate change manually (Close - Open) as Stooq snapshot doesn't send "Change"
     const change = close - open;
     const changePercent = open !== 0 ? (change / open) * 100 : 0;
 
@@ -172,13 +138,18 @@ function updateStocksFromStooq(rows: any[]) {
   });
 }
 
-// Chart Data - Real Data Only
+// Chart Data - Real Data Only via Proxy
 export const fetchStockChart = async (symbol: string, rangeLabel: string): Promise<ChartDataPoint[]> => {
   try {
     const stooqSymbol = symbol.toUpperCase().endsWith('.US') ? symbol : `${symbol}.US`;
-    const url = `https://stooq.com/q/d/l/?s=${stooqSymbol}&i=d&e=csv`;
     
-    const response = await fetch(url);
+    // Call internal API proxy
+    const response = await fetch(`/api/chart?symbol=${stooqSymbol}`);
+    
+    if (!response.ok) {
+       throw new Error(`Proxy error: ${response.status}`);
+    }
+
     const csvText = await response.text();
     
     const parsed = Papa.parse(csvText, {
@@ -189,29 +160,32 @@ export const fetchStockChart = async (symbol: string, rangeLabel: string): Promi
 
     const rows = parsed.data as any[];
 
+    // Map to simple data points
     let data: ChartDataPoint[] = rows
       .filter((row: any) => row.Date && typeof row.Close === 'number')
       .map((row: any) => ({
-        date: row.Date,
+        date: row.Date, // YYYY-MM-DD
         close: row.Close
       }))
-      .reverse();
+      .reverse(); // Stooq gives newest first, we want oldest first for chart
 
+    // Basic range slicing
     let daysToTake = 30;
     switch (rangeLabel) {
-      case '1D': daysToTake = 5; break;
+      case '1D': daysToTake = 5; break; // Stooq is daily only
       case '1W': daysToTake = 7; break;
       case '1M': daysToTake = 30; break;
       case '3M': daysToTake = 90; break;
       case 'YTD': daysToTake = 180; break;
       case '1Y': daysToTake = 365; break;
       case 'ALL': daysToTake = 9999; break;
+      default: daysToTake = 30;
     }
     
     return data.slice(-daysToTake);
 
   } catch (error) {
-    console.error("Failed to fetch real chart data.", error);
+    console.error("Failed to fetch real chart data via proxy.", error);
     return [];
   }
 };
