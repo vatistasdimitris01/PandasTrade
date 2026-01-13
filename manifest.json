@@ -1,0 +1,21 @@
+{
+  "name": "PandasTrade",
+  "short_name": "PandasTrade",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://pbs.twimg.com/profile_images/1977295267805241344/vwSoKSwf_400x400.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "https://pbs.twimg.com/profile_images/1977295267805241344/vwSoKSwf_400x400.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
