@@ -1,7 +1,7 @@
 {
   "name": "pandastrade",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,8 +13,8 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.23.1",
     "zustand": "^4.5.2",
-    "lucide-react": "^0.379.0",
-    "recharts": "^2.12.7",
+    "lucide-react": "^0.468.0",
+    "recharts": "^2.13.0",
     "react-hot-toast": "^2.4.1",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.3.0"
