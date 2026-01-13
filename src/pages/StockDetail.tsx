@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Share2, TrendingUp, TrendingDown, ArrowUpRight, Table as TableIcon, LineChart as ChartIcon } from 'lucide-react';
+import { ChevronLeft, Share2, TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useUserStore } from '../lib/store';
-import { getStock, fetchStockChart, subscribeToPriceChanges, getLogoUrl, ChartDataPoint, fetchQuotes } from '../lib/stockData';
+import { getStock, getChartData, subscribeToPriceChanges, getLogoUrl, ChartDataPoint, simulatePriceChange } from '../lib/stockData';
 import TradeModal from '../components/TradeModal';
-import HistoricalDataTable from '../components/HistoricalDataTable';
 
 const TIME_RANGES = ['1D', '1W', '1M', '3M', 'YTD', '1Y', 'ALL'];
 
@@ -17,26 +16,32 @@ export default function StockDetail() {
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
   const [, setTick] = useState(0);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [viewMode, setViewMode] = useState<'chart' | 'history'>('chart');
 
   useEffect(() => {
-    // Refresh quotes when detail opens
-    if (symbol) fetchQuotes([symbol]);
-
+    // 1. Subscribe to updates
     const unsubscribe = subscribeToPriceChanges(() => {
       setTick(t => t + 1);
+      // Update chart with latest price if needed (basic re-fetch from sim)
+      if (symbol) {
+        setChartData(getChartData(symbol, range));
+      }
     });
-    return () => unsubscribe();
-  }, [symbol]);
 
-  // Fetch Chart Data Effect
-  useEffect(() => {
-    if (symbol && viewMode === 'chart') {
-      fetchStockChart(symbol, range).then(data => {
-        setChartData(data);
-      });
+    // 2. Start Simulation Loop for this view if not already running globally (it is in Home, but for safety in direct link)
+    const interval = setInterval(() => {
+      simulatePriceChange();
+    }, 3000);
+
+    // Initial Chart Load
+    if (symbol) {
+      setChartData(getChartData(symbol, range));
     }
-  }, [symbol, range, viewMode]);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [symbol, range]);
 
   const stock = getStock(symbol || '');
   const holding = holdings.find(h => h.symbol === symbol);
@@ -80,7 +85,7 @@ export default function StockDetail() {
       </div>
 
       <div className="flex-1 px-6 pb-24 lg:grid lg:grid-cols-3 lg:gap-12 lg:pb-12">
-        {/* Left Column: Chart/Table & Visuals */}
+        {/* Left Column: Chart & Visuals */}
         <div className="lg:col-span-2 flex flex-col">
            {/* Desktop/Tablet Title */}
            <div className="hidden md:flex items-center gap-6 mb-8">
@@ -110,89 +115,55 @@ export default function StockDetail() {
             </div>
           </div>
 
-          {/* View Toggle */}
-          <div className="flex items-center space-x-4 mb-6">
-            <button
-              onClick={() => setViewMode('chart')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                viewMode === 'chart' 
-                  ? 'bg-white text-black' 
-                  : 'bg-neutral-900 text-neutral-500 hover:text-white'
-              }`}
-            >
-              <ChartIcon size={16} />
-              Chart
-            </button>
-            <button
-              onClick={() => setViewMode('history')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                viewMode === 'history' 
-                  ? 'bg-white text-black' 
-                  : 'bg-neutral-900 text-neutral-500 hover:text-white'
-              }`}
-            >
-              <TableIcon size={16} />
-              Historical Data
-            </button>
+          {/* Chart Container */}
+          <div className="h-64 md:h-[400px] lg:h-[500px] w-full mb-8 relative group bg-neutral-900/20 rounded-3xl overflow-hidden border border-neutral-800/50">
+             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 pointer-events-none z-10" />
+             <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff' }}
+                  cursor={{ stroke: '#525252', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  labelStyle={{ display: 'none' }}
+                  formatter={(value: number) => [value.toFixed(2), 'Price']}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="close" 
+                  stroke={chartColor} 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#colorPrice)" 
+                  isAnimationActive={true}
+                />
+                <YAxis domain={['auto', 'auto']} hide />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
 
-          {/* Main Content Area */}
-          <div className="min-h-[400px]">
-            {viewMode === 'chart' ? (
-              <>
-                <div className="h-64 md:h-[400px] lg:h-[500px] w-full mb-8 relative group bg-neutral-900/20 rounded-3xl overflow-hidden border border-neutral-800/50">
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 pointer-events-none z-10" />
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
-                          <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '8px' }}
-                        itemStyle={{ color: '#fff' }}
-                        cursor={{ stroke: '#525252', strokeWidth: 1, strokeDasharray: '4 4' }}
-                        labelStyle={{ display: 'none' }}
-                        formatter={(value: number) => [value.toFixed(2), 'Price']}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="close" 
-                        stroke={chartColor} 
-                        strokeWidth={3}
-                        fillOpacity={1} 
-                        fill="url(#colorPrice)" 
-                        isAnimationActive={true}
-                      />
-                      <YAxis domain={['auto', 'auto']} hide />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Time Ranges */}
-                <div className="mb-8">
-                  <div className="flex justify-between bg-neutral-900 rounded-xl p-1 lg:max-w-md lg:mx-auto">
-                    {TIME_RANGES.map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => setRange(r)}
-                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                          range === r 
-                            ? 'bg-neutral-800 text-white shadow-sm' 
-                            : 'text-neutral-500 hover:text-neutral-300'
-                        }`}
-                      >
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <HistoricalDataTable symbol={stock.symbol} />
-            )}
+          {/* Time Ranges */}
+          <div className="mb-8">
+            <div className="flex justify-between bg-neutral-900 rounded-xl p-1 lg:max-w-md lg:mx-auto">
+              {TIME_RANGES.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                    range === r 
+                      ? 'bg-neutral-800 text-white shadow-sm' 
+                      : 'text-neutral-500 hover:text-neutral-300'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
