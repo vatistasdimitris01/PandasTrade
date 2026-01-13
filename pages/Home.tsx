@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import { useUserStore } from '../lib/store';
-import { getStocks, getChartData, simulatePriceChange, subscribeToPriceChanges, getLogoUrl } from '../lib/stockData';
+import { getStocks, fetchStockChart, fetchQuotes, subscribeToPriceChanges, getLogoUrl } from '../lib/stockData';
 import MiniChart from '../components/MiniChart';
 
 export default function Home() {
@@ -10,15 +10,20 @@ export default function Home() {
   const { name, balance, currency, holdings } = useUserStore();
   const [, setTick] = useState(0);
 
-  // Subscribe to simulated price updates
+  // Initial Data Fetch & Subscription
   useEffect(() => {
+    // 1. Trigger initial fetch
+    fetchQuotes(); 
+
+    // 2. Subscribe to updates (whether from API or simulation)
     const unsubscribe = subscribeToPriceChanges(() => {
       setTick(t => t + 1);
     });
-    // UPDATED: Every 5 seconds to simulate real endpoints better
+
+    // 3. Poll for updates every 10 seconds
     const interval = setInterval(() => {
-      simulatePriceChange();
-    }, 5000); 
+      fetchQuotes();
+    }, 10000);
 
     return () => {
       unsubscribe();
@@ -34,7 +39,7 @@ export default function Home() {
     return total + (stock ? stock.regularMarketPrice * holding.shares : 0);
   }, 0);
 
-  // Calculate Daily Change (Simulated)
+  // Calculate Daily Change
   const dailyChangeValue = holdings.reduce((total, holding) => {
     const stock = allStocks.find(s => s.symbol === holding.symbol);
     return total + (stock ? stock.regularMarketChange * holding.shares : 0);
@@ -46,18 +51,17 @@ export default function Home() {
     ? (dailyChangeValue / (portfolioValue - dailyChangeValue)) * 100 
     : 0;
 
-  // Filter stocks that are in holdings for the "Your Holdings" section
+  // Filter stocks that are in holdings
   const holdingStocks = allStocks.filter(s => holdings.some(h => h.symbol === s.symbol));
 
   return (
     <div className="pb-20 max-w-7xl mx-auto min-h-screen flex flex-col">
-      {/* Header - Sticky on mobile, static on tablet/desktop */}
+      {/* Header */}
       <div className="px-6 pt-8 pb-6 flex items-center justify-between sticky top-0 bg-black/95 backdrop-blur-md z-20 md:static md:bg-transparent md:pt-12 md:pb-8">
         <div>
           <p className="text-neutral-500 text-sm font-medium">Welcome back,</p>
           <h1 className="text-white text-xl font-bold">{name}</h1>
         </div>
-        {/* Mobile-only Nav Buttons - Hidden on tablet (md) + */}
         <div className="flex gap-3 md:hidden">
           <button 
             onClick={() => navigate('/search')}
@@ -75,7 +79,7 @@ export default function Home() {
       </div>
 
       <div className="flex-1 px-6 space-y-8">
-        {/* Dashboard Grid for Top Stats */}
+        {/* Dashboard Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Main Value Card */}
           <div className="bg-neutral-900 rounded-3xl p-6 shadow-lg border border-neutral-800 md:col-span-2 lg:col-span-2 relative overflow-hidden group">
@@ -125,6 +129,11 @@ export default function Home() {
                 const holding = holdings.find(h => h.symbol === stock.symbol);
                 const isPositive = stock.regularMarketChange >= 0;
 
+                // Async chart data component wrapper could go here, 
+                // but for "MiniChart" we will stick to a simple generated line 
+                // to avoid flooding the API with 20 calls at once for 1-day data.
+                // We'll use a simplified fetch or the cached data.
+
                 return (
                   <div 
                     key={stock.symbol}
@@ -156,8 +165,9 @@ export default function Home() {
                          {holding?.shares} shares
                        </span>
                        <div className="h-8 w-24 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <MiniChart 
-                            data={getChartData(stock.symbol)} 
+                         {/* MiniChart using static data for list view performance */}
+                         <MiniChart 
+                            data={[{date:'1',close:stock.regularMarketOpen}, {date:'2', close:stock.regularMarketPrice}]} 
                             isPositive={isPositive} 
                             width={96} 
                             height={32}

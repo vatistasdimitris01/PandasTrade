@@ -1,7 +1,7 @@
 export interface StockData {
   symbol: string;
   shortName: string;
-  domain: string; // Used for logo fetching
+  domain: string;
   regularMarketPrice: number;
   regularMarketChange: number;
   regularMarketChangePercent: number;
@@ -16,7 +16,8 @@ export interface ChartDataPoint {
   close: number;
 }
 
-const BASE_STOCKS: StockData[] = [
+// Fallback data in case API fails (CORS issues are common with Yahoo API in browser)
+const FALLBACK_STOCKS: StockData[] = [
   {
     symbol: 'AAPL',
     shortName: 'Apple Inc.',
@@ -139,8 +140,8 @@ const BASE_STOCKS: StockData[] = [
   },
 ];
 
-// In-memory store for prices
-let currentStocks = [...BASE_STOCKS];
+// In-memory store
+let currentStocks = [...FALLBACK_STOCKS];
 const listeners: Array<() => void> = [];
 
 export const subscribeToPriceChanges = (callback: () => void) => {
@@ -157,15 +158,126 @@ const notifyListeners = () => {
   listeners.forEach(cb => cb());
 };
 
-// Simulate real-time updates every 5-10 seconds as requested
+// --- LOGO LOGIC ---
+const LOGO_DEV_PUBLIC_KEY = 'pk_ZctYVy-KQ7ic8GhFSprmsw';
+export const getLogoUrl = (symbol: string) => {
+  return `https://img.logo.dev/ticker/${symbol}?token=${LOGO_DEV_PUBLIC_KEY}`;
+};
+
+// --- REAL API FETCHING ---
+
+// Fetch Quote (Snapshot)
+export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
+  if (symbols.length === 0) {
+    symbols = currentStocks.map(s => s.symbol);
+  }
+
+  const symbolStr = symbols.join(',');
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network response was not ok');
+    
+    const data = await response.json();
+    const results = data.quoteResponse?.result;
+
+    if (results && results.length > 0) {
+      // Update in-memory stocks with real data
+      results.forEach((apiStock: any) => {
+        const index = currentStocks.findIndex(s => s.symbol === apiStock.symbol);
+        
+        const newStockData: StockData = {
+          symbol: apiStock.symbol,
+          shortName: apiStock.shortName || apiStock.longName || apiStock.symbol,
+          domain: getDomainFromSymbol(apiStock.symbol),
+          regularMarketPrice: apiStock.regularMarketPrice,
+          regularMarketChange: apiStock.regularMarketChange,
+          regularMarketChangePercent: apiStock.regularMarketChangePercent,
+          regularMarketOpen: apiStock.regularMarketOpen,
+          regularMarketDayHigh: apiStock.regularMarketDayHigh,
+          regularMarketDayLow: apiStock.regularMarketDayLow,
+          regularMarketVolume: apiStock.regularMarketVolume,
+        };
+
+        if (index > -1) {
+          currentStocks[index] = newStockData;
+        } else {
+          currentStocks.push(newStockData);
+        }
+      });
+      notifyListeners();
+    }
+  } catch (error) {
+    console.warn("Failed to fetch real quotes (likely CORS). Using fallback/simulated data.", error);
+    simulatePriceChange(); // Fallback to simulation
+  }
+};
+
+// Fetch Historical Chart
+export const fetchStockChart = async (symbol: string, rangeLabel: string): Promise<ChartDataPoint[]> => {
+  // Map app labels to Yahoo API params
+  let range = '1d';
+  let interval = '5m';
+
+  switch (rangeLabel) {
+    case '1D': range = '1d'; interval = '5m'; break;
+    case '1W': range = '5d'; interval = '15m'; break;
+    case '1M': range = '1mo'; interval = '1d'; break;
+    case '3M': range = '3mo'; interval = '1d'; break;
+    case 'YTD': range = 'ytd'; interval = '1d'; break;
+    case '1Y': range = '1y'; interval = '1wk'; break;
+    case 'ALL': range = 'max'; interval = '1mo'; break;
+    default: range = '1d'; interval = '5m'; break;
+  }
+
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&range=${range}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Chart fetch failed');
+    
+    const json = await response.json();
+    const result = json.chart?.result?.[0];
+
+    if (!result) return generateFallbackChart(symbol, rangeLabel);
+
+    const timestamps = result.timestamp;
+    const quotes = result.indicators?.quote?.[0];
+
+    if (!timestamps || !quotes || !quotes.close) return generateFallbackChart(symbol, rangeLabel);
+
+    const data: ChartDataPoint[] = [];
+    
+    timestamps.forEach((ts: number, i: number) => {
+      if (quotes.close[i] !== null && quotes.close[i] !== undefined) {
+        data.push({
+          date: new Date(ts * 1000).toLocaleString(), // Yahoo uses seconds
+          close: quotes.close[i]
+        });
+      }
+    });
+
+    return data;
+
+  } catch (error) {
+    console.warn(`Failed to fetch chart for ${symbol}. Using fallback.`, error);
+    return generateFallbackChart(symbol, rangeLabel);
+  }
+};
+
+// Helper for fallback domains
+function getDomainFromSymbol(symbol: string): string {
+  const fallback = FALLBACK_STOCKS.find(s => s.symbol === symbol);
+  return fallback ? fallback.domain : 'google.com';
+}
+
+// Fallback Simulation (Original Logic kept for reliability)
 export const simulatePriceChange = () => {
   currentStocks = currentStocks.map(stock => {
-    // Random volatility between -1% and +1%
-    const volatility = stock.regularMarketPrice * 0.005; 
+    const volatility = stock.regularMarketPrice * 0.002; 
     const change = (Math.random() - 0.5) * volatility;
-    
     const newPrice = Math.max(0.01, stock.regularMarketPrice + change);
-    // Recalculate change based on original open
     const openPrice = stock.regularMarketOpen;
     const newChange = newPrice - openPrice;
     const changePercent = (newChange / openPrice) * 100;
@@ -177,7 +289,6 @@ export const simulatePriceChange = () => {
       regularMarketChangePercent: changePercent,
     };
   });
-  
   notifyListeners();
 };
 
@@ -192,31 +303,18 @@ export const getStock = (symbol: string) => {
 
 export const getAllStocks = () => currentStocks;
 
-const LOGO_DEV_PUBLIC_KEY = 'pk_ZctYVy-KQ7ic8GhFSprmsw';
-
-// Helper to get logo URL from logo.dev
-export const getLogoUrl = (symbol: string) => {
-  return `https://img.logo.dev/ticker/${symbol}?token=${LOGO_DEV_PUBLIC_KEY}`;
-};
-
-export const STOCK_LOGOS: Record<string, string> = {}; 
-
-// Mock Data Generation
-export const getChartData = (symbol: string, range: string = '1D'): ChartDataPoint[] => {
-  const stock = getStock(symbol);
-  if (!stock) return [];
-
+// Fallback Chart Generator
+const generateFallbackChart = (symbol: string, range: string): ChartDataPoint[] => {
+  const stock = getStock(symbol) || FALLBACK_STOCKS[0];
   const points = range === '1D' ? 40 : 100;
   const data: ChartDataPoint[] = [];
   let price = stock.regularMarketPrice;
 
-  // Generate backwards
   for (let i = 0; i < points; i++) {
     data.unshift({
       date: i.toString(),
       close: price
     });
-    // Random walk
     price = price - (Math.random() - 0.5) * (price * 0.02);
   }
   return data;
