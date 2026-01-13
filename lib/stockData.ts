@@ -1,3 +1,5 @@
+import Papa from 'papaparse';
+
 export interface StockData {
   symbol: string;
   shortName: string;
@@ -16,7 +18,7 @@ export interface ChartDataPoint {
   close: number;
 }
 
-// Fallback data in case API fails (CORS issues are common with Yahoo API in browser)
+// Fallback data in case API fails
 const FALLBACK_STOCKS: StockData[] = [
   {
     symbol: 'AAPL',
@@ -166,7 +168,7 @@ export const getLogoUrl = (symbol: string) => {
 
 // --- REAL API FETCHING ---
 
-// Fetch Quote (Snapshot)
+// Fetch Quote (Snapshot) using Yahoo Finance as requested
 export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
   if (symbols.length === 0) {
     symbols = currentStocks.map(s => s.symbol);
@@ -214,54 +216,63 @@ export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
   }
 };
 
-// Fetch Historical Chart
+// Fetch Historical Chart using Stooq (CSV)
 export const fetchStockChart = async (symbol: string, rangeLabel: string): Promise<ChartDataPoint[]> => {
-  // Map app labels to Yahoo API params
-  let range = '1d';
-  let interval = '5m';
-
-  switch (rangeLabel) {
-    case '1D': range = '1d'; interval = '5m'; break;
-    case '1W': range = '5d'; interval = '15m'; break;
-    case '1M': range = '1mo'; interval = '1d'; break;
-    case '3M': range = '3mo'; interval = '1d'; break;
-    case 'YTD': range = 'ytd'; interval = '1d'; break;
-    case '1Y': range = '1y'; interval = '1wk'; break;
-    case 'ALL': range = 'max'; interval = '1mo'; break;
-    default: range = '1d'; interval = '5m'; break;
-  }
-
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&range=${range}`;
+  // Stooq requires .US for US stocks to be precise, though it often guesses.
+  const stooqSymbol = symbol.toUpperCase().endsWith('.US') ? symbol : `${symbol}.us`;
+  
+  // URL for Stooq Historical CSV Data
+  // s = symbol, i = interval (d=daily)
+  const url = `https://stooq.com/q/d/l/?s=${stooqSymbol}&i=d&e=csv`;
 
   try {
     const response = await fetch(url);
-    if (!response.ok) throw new Error('Chart fetch failed');
+    if (!response.ok) throw new Error('Stooq fetch failed');
     
-    const json = await response.json();
-    const result = json.chart?.result?.[0];
-
-    if (!result) return generateFallbackChart(symbol, rangeLabel);
-
-    const timestamps = result.timestamp;
-    const quotes = result.indicators?.quote?.[0];
-
-    if (!timestamps || !quotes || !quotes.close) return generateFallbackChart(symbol, rangeLabel);
-
-    const data: ChartDataPoint[] = [];
+    const csvText = await response.text();
     
-    timestamps.forEach((ts: number, i: number) => {
-      if (quotes.close[i] !== null && quotes.close[i] !== undefined) {
-        data.push({
-          date: new Date(ts * 1000).toLocaleString(), // Yahoo uses seconds
-          close: quotes.close[i]
-        });
-      }
+    const parsed = Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true
     });
 
+    const rows = parsed.data as any[];
+
+    // Parse and map rows
+    // Stooq Columns: Date, Open, High, Low, Close, Volume
+    // Stooq sorts Newest -> Oldest usually
+    let data: ChartDataPoint[] = rows
+      .filter((row: any) => row.Date && typeof row.Close === 'number')
+      .map((row: any) => ({
+        date: row.Date,
+        close: row.Close
+      }))
+      .reverse(); // Reverse to get Oldest -> Newest for the Chart
+
+    // Filter based on range
+    // Since Stooq via this endpoint gives Daily data, we can't do minute-level intraday.
+    // We will slice the days to match the requested duration approx.
+    let daysToTake = 30;
+    switch (rangeLabel) {
+      case '1D': daysToTake = 5; break; // Show last 5 days for context
+      case '1W': daysToTake = 7; break;
+      case '1M': daysToTake = 30; break;
+      case '3M': daysToTake = 90; break;
+      case 'YTD': daysToTake = 180; break; 
+      case '1Y': daysToTake = 365; break;
+      case 'ALL': daysToTake = data.length; break;
+      default: daysToTake = 30;
+    }
+
+    data = data.slice(-daysToTake);
+
+    if (data.length === 0) return generateFallbackChart(symbol, rangeLabel);
+    
     return data;
 
   } catch (error) {
-    console.warn(`Failed to fetch chart for ${symbol}. Using fallback.`, error);
+    console.warn(`Failed to fetch chart for ${symbol} from Stooq. Using fallback.`, error);
     return generateFallbackChart(symbol, rangeLabel);
   }
 };
