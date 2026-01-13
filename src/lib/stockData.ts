@@ -67,7 +67,6 @@ export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
     const symbolStr = symbols.join(',');
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`;
     
-    // Note: This relies on the browser/network allowing the request.
     const response = await fetch(url);
     if (response.ok) {
       const data = await response.json();
@@ -83,7 +82,6 @@ export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
   }
 
   // 2. Fallback to Stooq (CSV)
-  // Stooq is often more permissible with CORS for CSV data.
   try {
     const stooqSymbols = symbols.map(s => s.toUpperCase().endsWith('.US') ? s : `${s}.US`).join(',');
     // f=sd2t2ohlcv : Symbol, Date, Time, Open, High, Low, Close, Volume
@@ -103,7 +101,7 @@ export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
       notifyListeners();
     }
   } catch (error) {
-    console.error("All data sources failed. Displaying 0 values.", error);
+    console.error("All data sources failed.", error);
   }
 };
 
@@ -138,7 +136,6 @@ function updateStocksFromStooq(rows: any[]) {
   rows.forEach((row: any) => {
     if (!Array.isArray(row) || row.length < 7) return;
 
-    // Clean symbol (remove .US)
     const rawSymbol = (row[0] as string || '').replace('.US', '');
     if (!rawSymbol) return;
 
@@ -148,7 +145,6 @@ function updateStocksFromStooq(rows: any[]) {
     const low = typeof row[5] === 'number' ? row[5] : 0;
     const volume = typeof row[7] === 'number' ? row[7] : 0;
 
-    // Calculate change manually if needed (Stooq snapshot is basic)
     const change = close - open;
     const changePercent = open !== 0 ? (change / open) * 100 : 0;
 
@@ -178,7 +174,6 @@ function updateStocksFromStooq(rows: any[]) {
 
 // Chart Data - Real Data Only
 export const fetchStockChart = async (symbol: string, rangeLabel: string): Promise<ChartDataPoint[]> => {
-  // Try Stooq Historical CSV
   try {
     const stooqSymbol = symbol.toUpperCase().endsWith('.US') ? symbol : `${symbol}.US`;
     const url = `https://stooq.com/q/d/l/?s=${stooqSymbol}&i=d&e=csv`;
@@ -194,19 +189,17 @@ export const fetchStockChart = async (symbol: string, rangeLabel: string): Promi
 
     const rows = parsed.data as any[];
 
-    // Filter and Map
     let data: ChartDataPoint[] = rows
       .filter((row: any) => row.Date && typeof row.Close === 'number')
       .map((row: any) => ({
-        date: row.Date, // YYYY-MM-DD
+        date: row.Date,
         close: row.Close
       }))
-      .reverse(); // Stooq gives Newest first, we need Oldest first for chart
+      .reverse();
 
-    // Basic range slicing (approximate days)
     let daysToTake = 30;
     switch (rangeLabel) {
-      case '1D': daysToTake = 5; break; // Stooq is daily, so 1D isn't really possible, showing 5 days context
+      case '1D': daysToTake = 5; break;
       case '1W': daysToTake = 7; break;
       case '1M': daysToTake = 30; break;
       case '3M': daysToTake = 90; break;
@@ -219,7 +212,7 @@ export const fetchStockChart = async (symbol: string, rangeLabel: string): Promi
 
   } catch (error) {
     console.error("Failed to fetch real chart data.", error);
-    return []; // Return empty, NO FAKE DATA
+    return [];
   }
 };
 

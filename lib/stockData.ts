@@ -66,10 +66,9 @@ export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
     symbols = currentStocks.map(s => s.symbol);
   }
 
-  const symbolStr = symbols.join(',');
-
   // Attempt 1: Yahoo Finance
   try {
+    const symbolStr = symbols.join(',');
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error('Network response was not ok');
@@ -83,7 +82,7 @@ export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
       return; // Success, exit
     }
   } catch (error) {
-    console.warn("Yahoo Quote API failed/blocked. Trying Stooq...", error);
+    // console.warn("Yahoo Quote API failed/blocked. Trying Stooq...", error);
   }
 
   // Attempt 2: Stooq CSV (No CORS usually, real data)
@@ -91,7 +90,7 @@ export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
     // Stooq often works better with explicit .US for US stocks
     const stooqSymbols = symbols.map(s => {
         // Simple check if it likely needs .US (heuristic)
-        return (s.match(/^[A-Z]+$/)) ? `${s}.US` : s;
+        return (s.match(/^[A-Z]+$/)) && !s.includes('.') ? `${s}.US` : s;
     }).join(',');
 
     // f=sd2t2ohlcv : Symbol, Date, Time, Open, High, Low, Close, Volume
@@ -112,7 +111,6 @@ export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
     }
   } catch (error) {
     console.error("All quote APIs failed. Showing stale or empty data.", error);
-    // DO NOT SIMULATE DATA.
   }
 };
 
@@ -168,7 +166,82 @@ function updateStocksFromStooq(rows: any[]) {
         const newStockData: StockData = {
             symbol: rawSymbol,
             shortName: index > -1 ? currentStocks[index].shortName : rawSymbol, // Keep existing name or fallback
-            domain: index > -1 ? currentStocks[index].domain : 'google.com',
+            domain: index > -1 ? currentStocks[index].domain : getDomainFromSymbol(rawSymbol),
             regularMarketPrice: price,
             regularMarketChange: change,
-            
+            regularMarketChangePercent: changePercent,
+            regularMarketOpen: open,
+            regularMarketDayHigh: high,
+            regularMarketDayLow: low,
+            regularMarketVolume: volume,
+        };
+
+        if (index > -1) {
+          currentStocks[index] = newStockData;
+        } else {
+          currentStocks.push(newStockData);
+        }
+    });
+}
+
+function getDomainFromSymbol(symbol: string): string {
+  const stock = INITIAL_STOCKS.find(s => s.symbol === symbol);
+  return stock ? stock.domain : 'google.com';
+}
+
+export const getStocks = (symbols?: string[]) => {
+  if (!symbols) return currentStocks;
+  return currentStocks.filter(s => symbols.includes(s.symbol));
+};
+
+export const getStock = (symbol: string) => {
+  return currentStocks.find(s => s.symbol === symbol);
+};
+
+export const getAllStocks = () => currentStocks;
+
+export const fetchStockChart = async (symbol: string, rangeLabel: string): Promise<ChartDataPoint[]> => {
+  try {
+    const stooqSymbol = (symbol.match(/^[A-Z]+$/)) && !symbol.includes('.') ? `${symbol}.US` : symbol;
+    // Daily data: https://stooq.com/q/d/l/?s=AAPL.US&i=d&e=csv
+    const url = `https://stooq.com/q/d/l/?s=${stooqSymbol}&i=d&e=csv`;
+    
+    const response = await fetch(url);
+    const csvText = await response.text();
+    
+    const parsed = Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true
+    });
+
+    const rows = parsed.data as any[];
+
+    // Stooq daily format keys: Date, Open, High, Low, Close, Volume
+    let data: ChartDataPoint[] = rows
+      .filter((row: any) => row.Date && typeof row.Close === 'number')
+      .map((row: any) => ({
+        date: row.Date,
+        close: row.Close
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    let daysToTake = 30;
+    switch (rangeLabel) {
+      case '1D': daysToTake = 5; break;
+      case '1W': daysToTake = 7; break;
+      case '1M': daysToTake = 30; break;
+      case '3M': daysToTake = 90; break;
+      case 'YTD': daysToTake = 180; break;
+      case '1Y': daysToTake = 365; break;
+      case 'ALL': daysToTake = 9999; break;
+      default: daysToTake = 30;
+    }
+    
+    return data.slice(-daysToTake);
+
+  } catch (error) {
+    console.error("Failed to fetch real chart data.", error);
+    return [];
+  }
+};
