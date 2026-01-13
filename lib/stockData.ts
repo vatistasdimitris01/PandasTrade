@@ -1,5 +1,3 @@
-import { create } from 'zustand';
-
 export interface StockData {
   symbol: string;
   shortName: string;
