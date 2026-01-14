@@ -1,3 +1,5 @@
+import Papa from 'papaparse';
+
 export interface StockData {
   symbol: string;
   shortName: string;
@@ -16,18 +18,19 @@ export interface ChartDataPoint {
   close: number;
 }
 
-// Realistic initial data so the app looks good immediately
+// Initial Metadata. Prices initialized to 0. 
+// They will ONLY be populated by real API calls.
 const INITIAL_STOCKS: StockData[] = [
-  { symbol: 'AAPL', shortName: 'Apple Inc.', domain: 'apple.com', regularMarketPrice: 175.50, regularMarketChange: 2.50, regularMarketChangePercent: 1.44, regularMarketOpen: 173.00, regularMarketDayHigh: 176.00, regularMarketDayLow: 173.00, regularMarketVolume: 52000000 },
-  { symbol: 'TSLA', shortName: 'Tesla, Inc.', domain: 'tesla.com', regularMarketPrice: 210.00, regularMarketChange: -5.20, regularMarketChangePercent: -2.41, regularMarketOpen: 215.20, regularMarketDayHigh: 218.00, regularMarketDayLow: 208.00, regularMarketVolume: 34000000 },
-  { symbol: 'NVDA', shortName: 'NVIDIA Corp', domain: 'nvidia.com', regularMarketPrice: 460.10, regularMarketChange: 12.30, regularMarketChangePercent: 2.75, regularMarketOpen: 447.80, regularMarketDayHigh: 465.00, regularMarketDayLow: 445.00, regularMarketVolume: 42000000 },
-  { symbol: 'MSFT', shortName: 'Microsoft', domain: 'microsoft.com', regularMarketPrice: 330.00, regularMarketChange: 1.50, regularMarketChangePercent: 0.45, regularMarketOpen: 328.50, regularMarketDayHigh: 332.00, regularMarketDayLow: 327.00, regularMarketVolume: 21000000 },
-  { symbol: 'AMZN', shortName: 'Amazon', domain: 'amazon.com', regularMarketPrice: 135.00, regularMarketChange: -0.80, regularMarketChangePercent: -0.59, regularMarketOpen: 135.80, regularMarketDayHigh: 137.00, regularMarketDayLow: 134.00, regularMarketVolume: 38000000 },
-  { symbol: 'GOOGL', shortName: 'Alphabet', domain: 'google.com', regularMarketPrice: 138.00, regularMarketChange: 0.50, regularMarketChangePercent: 0.36, regularMarketOpen: 137.50, regularMarketDayHigh: 139.00, regularMarketDayLow: 137.00, regularMarketVolume: 19000000 },
-  { symbol: 'META', shortName: 'Meta Platforms', domain: 'meta.com', regularMarketPrice: 305.00, regularMarketChange: 4.20, regularMarketChangePercent: 1.40, regularMarketOpen: 300.80, regularMarketDayHigh: 308.00, regularMarketDayLow: 300.00, regularMarketVolume: 15000000 },
-  { symbol: 'NFLX', shortName: 'Netflix', domain: 'netflix.com', regularMarketPrice: 440.00, regularMarketChange: -2.00, regularMarketChangePercent: -0.45, regularMarketOpen: 442.00, regularMarketDayHigh: 445.00, regularMarketDayLow: 438.00, regularMarketVolume: 5000000 },
-  { symbol: 'AMD', shortName: 'AMD', domain: 'amd.com', regularMarketPrice: 105.00, regularMarketChange: 1.10, regularMarketChangePercent: 1.06, regularMarketOpen: 103.90, regularMarketDayHigh: 106.00, regularMarketDayLow: 103.00, regularMarketVolume: 45000000 },
-  { symbol: 'DIS', shortName: 'Disney', domain: 'disney.com', regularMarketPrice: 85.00, regularMarketChange: -0.50, regularMarketChangePercent: -0.58, regularMarketOpen: 85.50, regularMarketDayHigh: 86.00, regularMarketDayLow: 84.50, regularMarketVolume: 12000000 },
+  { symbol: 'AAPL', shortName: 'Apple Inc.', domain: 'apple.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
+  { symbol: 'TSLA', shortName: 'Tesla, Inc.', domain: 'tesla.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
+  { symbol: 'NVDA', shortName: 'NVIDIA Corp', domain: 'nvidia.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
+  { symbol: 'MSFT', shortName: 'Microsoft', domain: 'microsoft.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
+  { symbol: 'AMZN', shortName: 'Amazon', domain: 'amazon.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
+  { symbol: 'GOOGL', shortName: 'Alphabet', domain: 'google.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
+  { symbol: 'META', shortName: 'Meta Platforms', domain: 'meta.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
+  { symbol: 'NFLX', shortName: 'Netflix', domain: 'netflix.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
+  { symbol: 'AMD', shortName: 'AMD', domain: 'amd.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
+  { symbol: 'DIS', shortName: 'Disney', domain: 'disney.com', regularMarketPrice: 0, regularMarketChange: 0, regularMarketChangePercent: 0, regularMarketOpen: 0, regularMarketDayHigh: 0, regularMarketDayLow: 0, regularMarketVolume: 0 },
 ];
 
 let currentStocks = [...INITIAL_STOCKS];
@@ -52,44 +55,171 @@ export const getLogoUrl = (symbol: string) => {
   return `https://img.logo.dev/ticker/${symbol}?token=${LOGO_DEV_PUBLIC_KEY}`;
 };
 
-// --- SIMULATION LOGIC ---
+// --- REAL DATA FETCHING ---
 
-export const simulatePriceChange = () => {
-  currentStocks = currentStocks.map(stock => {
-    // Random walk
-    const volatility = 0.0015; // 0.15% max move per tick
-    const changePercent = (Math.random() - 0.5) * 2 * volatility;
-    const changeAmount = stock.regularMarketPrice * changePercent;
-    
-    let newPrice = stock.regularMarketPrice + changeAmount;
-    
-    // Ensure price doesn't go below 0.01
-    if (newPrice < 0.01) newPrice = 0.01;
+export const fetchQuotes = async (symbols: string[] = []): Promise<void> => {
+  if (symbols.length === 0) {
+    symbols = currentStocks.map(s => s.symbol);
+  }
 
-    // Update daily stats
-    const newHigh = Math.max(stock.regularMarketDayHigh, newPrice);
-    const newLow = Math.min(stock.regularMarketDayLow, newPrice);
+  // 1. Try Yahoo Finance (JSON)
+  try {
+    const symbolStr = symbols.join(',');
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`;
     
-    // Recalculate change from Open
-    const dailyChange = newPrice - stock.regularMarketOpen;
-    const dailyChangePercent = (dailyChange / stock.regularMarketOpen) * 100;
+    const response = await fetch(url);
+    if (response.ok) {
+      const data = await response.json();
+      const results = data.quoteResponse?.result;
+      if (results && results.length > 0) {
+        updateStocksFromYahoo(results);
+        notifyListeners();
+        return; // Success, stop here.
+      }
+    }
+  } catch (error) {
+    // Silent fail for Yahoo, try fallback
+  }
+
+  // 2. Fallback to Stooq (CSV)
+  try {
+    const stooqSymbols = symbols.map(s => s.toUpperCase().endsWith('.US') ? s : `${s}.US`).join(',');
+    // f=sd2t2ohlcv : Symbol, Date, Time, Open, High, Low, Close, Volume
+    const url = `https://stooq.com/q/l/?s=${stooqSymbols}&f=sd2t2ohlcv&e=csv`;
     
-    // Simulate volume ticking up
-    const volumeTick = Math.floor(Math.random() * 5000);
+    const response = await fetch(url);
+    const csvText = await response.text();
+    
+    const parsed = Papa.parse(csvText, {
+      header: false,
+      skipEmptyLines: true,
+      dynamicTyping: true
+    });
 
-    return {
-      ...stock,
-      regularMarketPrice: newPrice,
-      regularMarketDayHigh: newHigh,
-      regularMarketDayLow: newLow,
-      regularMarketChange: dailyChange,
-      regularMarketChangePercent: dailyChangePercent,
-      regularMarketVolume: stock.regularMarketVolume + volumeTick
-    };
-  });
-
-  notifyListeners();
+    if (parsed.data && parsed.data.length > 0) {
+      updateStocksFromStooq(parsed.data);
+      notifyListeners();
+    }
+  } catch (error) {
+    console.error("All data sources failed.", error);
+  }
 };
+
+function updateStocksFromYahoo(results: any[]) {
+  results.forEach((apiStock: any) => {
+    const index = currentStocks.findIndex(s => s.symbol === apiStock.symbol);
+    const domain = getDomainFromSymbol(apiStock.symbol);
+    
+    const newStockData: StockData = {
+      symbol: apiStock.symbol,
+      shortName: apiStock.shortName || apiStock.longName || apiStock.symbol,
+      domain: domain,
+      regularMarketPrice: apiStock.regularMarketPrice || 0,
+      regularMarketChange: apiStock.regularMarketChange || 0,
+      regularMarketChangePercent: apiStock.regularMarketChangePercent || 0,
+      regularMarketOpen: apiStock.regularMarketOpen || 0,
+      regularMarketDayHigh: apiStock.regularMarketDayHigh || 0,
+      regularMarketDayLow: apiStock.regularMarketDayLow || 0,
+      regularMarketVolume: apiStock.regularMarketVolume || 0,
+    };
+
+    if (index > -1) {
+      currentStocks[index] = newStockData;
+    } else {
+      currentStocks.push(newStockData);
+    }
+  });
+}
+
+function updateStocksFromStooq(rows: any[]) {
+  // Stooq CSV row: [Symbol, Date, Time, Open, High, Low, Close, Volume]
+  rows.forEach((row: any) => {
+    if (!Array.isArray(row) || row.length < 7) return;
+
+    const rawSymbol = (row[0] as string || '').replace('.US', '');
+    if (!rawSymbol) return;
+
+    const close = typeof row[6] === 'number' ? row[6] : 0;
+    const open = typeof row[3] === 'number' ? row[3] : 0;
+    const high = typeof row[4] === 'number' ? row[4] : 0;
+    const low = typeof row[5] === 'number' ? row[5] : 0;
+    const volume = typeof row[7] === 'number' ? row[7] : 0;
+
+    const change = close - open;
+    const changePercent = open !== 0 ? (change / open) * 100 : 0;
+
+    const index = currentStocks.findIndex(s => s.symbol === rawSymbol);
+    const domain = getDomainFromSymbol(rawSymbol);
+
+    const newStockData: StockData = {
+      symbol: rawSymbol,
+      shortName: index > -1 ? currentStocks[index].shortName : rawSymbol,
+      domain: domain,
+      regularMarketPrice: close,
+      regularMarketChange: change,
+      regularMarketChangePercent: changePercent,
+      regularMarketOpen: open,
+      regularMarketDayHigh: high,
+      regularMarketDayLow: low,
+      regularMarketVolume: volume,
+    };
+
+    if (index > -1) {
+      currentStocks[index] = newStockData;
+    } else {
+      currentStocks.push(newStockData);
+    }
+  });
+}
+
+// Chart Data - Real Data Only
+export const fetchStockChart = async (symbol: string, rangeLabel: string): Promise<ChartDataPoint[]> => {
+  try {
+    const stooqSymbol = symbol.toUpperCase().endsWith('.US') ? symbol : `${symbol}.US`;
+    const url = `https://stooq.com/q/d/l/?s=${stooqSymbol}&i=d&e=csv`;
+    
+    const response = await fetch(url);
+    const csvText = await response.text();
+    
+    const parsed = Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true
+    });
+
+    const rows = parsed.data as any[];
+
+    let data: ChartDataPoint[] = rows
+      .filter((row: any) => row.Date && typeof row.Close === 'number')
+      .map((row: any) => ({
+        date: row.Date,
+        close: row.Close
+      }))
+      .reverse();
+
+    let daysToTake = 30;
+    switch (rangeLabel) {
+      case '1D': daysToTake = 5; break;
+      case '1W': daysToTake = 7; break;
+      case '1M': daysToTake = 30; break;
+      case '3M': daysToTake = 90; break;
+      case 'YTD': daysToTake = 180; break;
+      case '1Y': daysToTake = 365; break;
+      case 'ALL': daysToTake = 9999; break;
+    }
+    
+    return data.slice(-daysToTake);
+
+  } catch (error) {
+    console.error("Failed to fetch real chart data.", error);
+    return [];
+  }
+};
+
+function getDomainFromSymbol(symbol: string): string {
+  const stock = INITIAL_STOCKS.find(s => s.symbol === symbol);
+  return stock ? stock.domain : 'google.com';
+}
 
 export const getStocks = (symbols?: string[]) => {
   if (!symbols) return currentStocks;
@@ -101,42 +231,3 @@ export const getStock = (symbol: string) => {
 };
 
 export const getAllStocks = () => currentStocks;
-
-// --- CHART GENERATION ---
-// Generates a consistent-looking chart history that ends at the current price
-export const getChartData = (symbol: string, rangeLabel: string = '1D'): ChartDataPoint[] => {
-  const stock = getStock(symbol);
-  if (!stock) return [];
-
-  let points = 50;
-  let intervalMinutes = 30;
-  
-  switch (rangeLabel) {
-    case '1D': points = 40; intervalMinutes = 10; break;
-    case '1W': points = 60; intervalMinutes = 60; break;
-    case '1M': points = 30; intervalMinutes = 24 * 60; break;
-    case '3M': points = 90; intervalMinutes = 24 * 60; break;
-    case 'YTD': points = 100; intervalMinutes = 24 * 60 * 2; break;
-    case '1Y': points = 100; intervalMinutes = 24 * 60 * 3; break;
-    case 'ALL': points = 100; intervalMinutes = 24 * 60 * 10; break;
-  }
-
-  const data: ChartDataPoint[] = [];
-  let currentPrice = stock.regularMarketPrice;
-  const now = new Date();
-
-  // Walk backwards from current price
-  for (let i = 0; i < points; i++) {
-    data.unshift({
-      date: new Date(now.getTime() - i * intervalMinutes * 60 * 1000).toISOString(),
-      close: currentPrice
-    });
-    
-    // Reverse random walk to generate history
-    const volatility = 0.01; // 1% volatility for history generation
-    const change = 1 + (Math.random() - 0.5) * volatility;
-    currentPrice = currentPrice / change; 
-  }
-
-  return data;
-};
