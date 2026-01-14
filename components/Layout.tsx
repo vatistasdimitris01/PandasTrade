@@ -1,9 +1,11 @@
+
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { LayoutDashboard, Search, Settings } from 'lucide-react';
 import { useUserStore } from '../lib/store';
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+// Fix: Made children optional to resolve "Property 'children' is missing" TS error reported in App.tsx
+export default function Layout({ children }: { children?: React.ReactNode }) {
   const location = useLocation();
   const { balance, currency, name, avatar } = useUserStore();
 

@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import StockDetail from './pages/StockDetail';
+import StockEdit from './pages/StockEdit';
 import Search from './pages/Search';
 import Settings from './pages/Settings';
 import Layout from './components/Layout';
@@ -14,6 +16,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/stock/:symbol" element={<StockDetail />} />
+          <Route path="/stock/:symbol/edit" element={<StockEdit />} />
           <Route path="/search" element={<Search />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

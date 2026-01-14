@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
@@ -7,18 +8,27 @@ export interface Holding {
   avgCost: number;
 }
 
+export interface StockPriceConfig {
+  symbol: string;
+  price: number;
+  min: number;
+  max: number;
+}
+
 interface UserSettings {
   name: string;
   avatar: string;
   balance: number;
   currency: string;
   holdings: Holding[];
+  stockPriceConfigs: Record<string, StockPriceConfig>;
   setName: (name: string) => void;
   setAvatar: (url: string) => void;
   setBalance: (balance: number) => void;
   setCurrency: (currency: string) => void;
   setHoldings: (holdings: Holding[]) => void;
   updateHoldingShares: (symbol: string, newShares: number) => void;
+  setStockPriceConfig: (symbol: string, config: StockPriceConfig) => void;
   buyStock: (symbol: string, shares: number, pricePerShare: number) => boolean;
   sellStock: (symbol: string, shares: number, pricePerShare: number) => boolean;
   resetAccount: () => void;
@@ -35,6 +45,7 @@ export const useUserStore = create<UserSettings>()(
         { symbol: 'AAPL', shares: 2, avgCost: 175.50 },
         { symbol: 'TSLA', shares: 1, avgCost: 210.00 },
       ],
+      stockPriceConfigs: {},
       setName: (name) => set({ name }),
       setAvatar: (avatar) => set({ avatar }),
       setBalance: (balance) => set({ balance }),
@@ -54,6 +65,15 @@ export const useUserStore = create<UserSettings>()(
         }
       },
 
+      setStockPriceConfig: (symbol, config) => {
+        set((state) => ({
+          stockPriceConfigs: {
+            ...state.stockPriceConfigs,
+            [symbol]: config,
+          },
+        }));
+      },
+
       buyStock: (symbol, shares, pricePerShare) => {
         const state = get();
         const totalCost = shares * pricePerShare;
@@ -67,7 +87,6 @@ export const useUserStore = create<UserSettings>()(
 
         if (existingHolding) {
           const totalShares = existingHolding.shares + shares;
-          // Calculate new weighted average cost
           const totalValue = (existingHolding.shares * existingHolding.avgCost) + totalCost;
           const newAvgCost = totalValue / totalShares;
 
@@ -123,7 +142,8 @@ export const useUserStore = create<UserSettings>()(
         holdings: [
           { symbol: 'AAPL', shares: 2, avgCost: 175.50 },
           { symbol: 'TSLA', shares: 1, avgCost: 210.00 },
-        ]
+        ],
+        stockPriceConfigs: {},
       })
     }),
     {

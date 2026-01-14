@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search as SearchIcon, TrendingUp, Sparkles } from 'lucide-react';
@@ -29,7 +30,8 @@ export default function Search() {
       s.shortName.toLowerCase().includes(query.toLowerCase())
   );
 
-  const StockCard = ({ stock, compact = false }: { stock: any, compact?: boolean }) => (
+  // Fix: Added key to props type to satisfy TS when component is used in map() loops
+  const StockCard = ({ stock, compact = false }: { stock: any, compact?: boolean, key?: React.Key }) => (
     <div
       onClick={() => navigate(`/stock/${stock.symbol}`)}
       className={`bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex-shrink-0 cursor-pointer hover:bg-neutral-800 transition-colors ${compact ? 'w-40' : 'w-48'}`}

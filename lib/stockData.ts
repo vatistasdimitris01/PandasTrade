@@ -1,7 +1,10 @@
+
+import { useUserStore } from './store';
+
 export interface StockData {
   symbol: string;
   shortName: string;
-  domain: string; // Used for logo fetching
+  domain: string; 
   regularMarketPrice: number;
   regularMarketChange: number;
   regularMarketChangePercent: number;
@@ -139,7 +142,6 @@ const BASE_STOCKS: StockData[] = [
   },
 ];
 
-// In-memory store for prices
 let currentStocks = [...BASE_STOCKS];
 const listeners: Array<() => void> = [];
 
@@ -157,15 +159,46 @@ const notifyListeners = () => {
   listeners.forEach(cb => cb());
 };
 
-// Simulate real-time updates every 5-10 seconds as requested
-export const simulatePriceChange = () => {
+export const syncStocksWithConfig = () => {
+  const configs = useUserStore.getState().stockPriceConfigs;
   currentStocks = currentStocks.map(stock => {
-    // Random volatility between -1% and +1%
+    const config = configs[stock.symbol];
+    if (config) {
+      // If a manual override exists, ensure current price respects bounds
+      const price = Math.min(Math.max(config.price, config.min), config.max);
+      return {
+        ...stock,
+        regularMarketPrice: price,
+      };
+    }
+    return stock;
+  });
+};
+
+export const simulatePriceChange = () => {
+  const configs = useUserStore.getState().stockPriceConfigs;
+
+  currentStocks = currentStocks.map(stock => {
+    const config = configs[stock.symbol];
     const volatility = stock.regularMarketPrice * 0.005; 
-    const change = (Math.random() - 0.5) * volatility;
+    let change = (Math.random() - 0.5) * volatility;
     
-    const newPrice = Math.max(0.01, stock.regularMarketPrice + change);
-    // Recalculate change based on original open
+    let newPrice = stock.regularMarketPrice + change;
+
+    // Apply bounds if configured
+    if (config) {
+      if (newPrice < config.min) newPrice = config.min;
+      if (newPrice > config.max) newPrice = config.max;
+      
+      // Update config price in store so it reflects real-time simulation
+      useUserStore.getState().setStockPriceConfig(stock.symbol, {
+        ...config,
+        price: newPrice
+      });
+    } else {
+      newPrice = Math.max(0.01, newPrice);
+    }
+
     const openPrice = stock.regularMarketOpen;
     const newChange = newPrice - openPrice;
     const changePercent = (newChange / openPrice) * 100;
@@ -194,14 +227,10 @@ export const getAllStocks = () => currentStocks;
 
 const LOGO_DEV_PUBLIC_KEY = 'pk_ZctYVy-KQ7ic8GhFSprmsw';
 
-// Helper to get logo URL from logo.dev
 export const getLogoUrl = (symbol: string) => {
   return `https://img.logo.dev/ticker/${symbol}?token=${LOGO_DEV_PUBLIC_KEY}`;
 };
 
-export const STOCK_LOGOS: Record<string, string> = {}; 
-
-// Mock Data Generation
 export const getChartData = (symbol: string, range: string = '1D'): ChartDataPoint[] => {
   const stock = getStock(symbol);
   if (!stock) return [];
@@ -210,13 +239,11 @@ export const getChartData = (symbol: string, range: string = '1D'): ChartDataPoi
   const data: ChartDataPoint[] = [];
   let price = stock.regularMarketPrice;
 
-  // Generate backwards
   for (let i = 0; i < points; i++) {
     data.unshift({
       date: i.toString(),
       close: price
     });
-    // Random walk
     price = price - (Math.random() - 0.5) * (price * 0.02);
   }
   return data;

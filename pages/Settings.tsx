@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, User, DollarSign, RefreshCw, Layers, Camera, Check } from 'lucide-react';
 import { useUserStore } from '../lib/store';
@@ -10,8 +11,16 @@ export default function Settings() {
   const [localName, setLocalName] = useState(name);
   const [localAvatar, setLocalAvatar] = useState(avatar);
   const [localBalance, setLocalBalance] = useState(balance.toString());
+  const balanceInputRef = useRef<HTMLInputElement>(null);
 
-  // Robust navigation handler
+  // Synchronize local state with store when component mounts or store changes
+  // But only if input is not focused to prevent overwriting user input while typing
+  useEffect(() => {
+    if (document.activeElement !== balanceInputRef.current) {
+      setLocalBalance(balance.toString());
+    }
+  }, [balance]);
+
   const handleBack = () => {
     if (window.history.length > 2) {
       navigate(-1);
@@ -33,13 +42,14 @@ export default function Settings() {
   const handleReset = () => {
     if (confirm('This will permanently delete your portfolio history. Continue?')) {
       resetAccount();
-      setLocalBalance("10000");
+      setLocalBalance("160");
       toast.success('Account reset successfully');
       navigate('/');
     }
   };
 
-  const InputGroup = ({ label, children }: { label: string, children: React.ReactNode }) => (
+  // Fix: Made children optional to resolve "Property 'children' is missing in type '{ label: string; }'" TS error
+  const InputGroup = ({ label, children }: { label: string, children?: React.ReactNode }) => (
     <div className="space-y-2">
       <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider ml-1">{label}</label>
       {children}
@@ -49,7 +59,6 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-black pb-24">
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
         <div className="px-6 pt-8 pb-8 lg:pt-16 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-xl z-20 border-b border-neutral-900/50">
           <div className="flex items-center gap-4">
             <button 
@@ -72,7 +81,6 @@ export default function Settings() {
 
         <div className="px-6 py-8 space-y-12">
           
-          {/* Section: Profile */}
           <section>
             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center">
@@ -116,7 +124,6 @@ export default function Settings() {
             </div>
           </section>
 
-          {/* Section: Account & Currency */}
           <section>
             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center">
@@ -148,12 +155,14 @@ export default function Settings() {
               
               <InputGroup label="Manual Balance Override">
                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-bold text-lg">{currency}</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-bold text-lg pointer-events-none">{currency}</span>
                     <input 
+                      ref={balanceInputRef}
                       type="number" 
                       value={localBalance}
                       onChange={(e) => setLocalBalance(e.target.value)}
                       className="w-full bg-neutral-900 border-none rounded-xl pl-10 pr-4 py-3.5 text-white placeholder-neutral-600 focus:ring-2 focus:ring-neutral-700 transition-all text-lg font-bold font-mono"
+                      inputMode="decimal"
                     />
                  </div>
                  <p className="text-xs text-neutral-500 mt-2 ml-1">
@@ -163,7 +172,6 @@ export default function Settings() {
             </div>
           </section>
 
-          {/* Section: Holdings */}
           <section>
             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-neutral-900 flex items-center justify-center">
@@ -204,7 +212,6 @@ export default function Settings() {
              </div>
           </section>
 
-          {/* Danger Zone */}
           <section className="pt-8">
             <div className="border border-red-500/20 bg-red-500/5 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div>

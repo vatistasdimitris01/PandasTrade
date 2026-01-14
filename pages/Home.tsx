@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, Search, TrendingUp, TrendingDown } from 'lucide-react';
 import { useUserStore } from '../lib/store';
-import { getStocks, getChartData, simulatePriceChange, subscribeToPriceChanges, getLogoUrl } from '../lib/stockData';
+import { getStocks, getChartData, simulatePriceChange, subscribeToPriceChanges, getLogoUrl, syncStocksWithConfig } from '../lib/stockData';
 import MiniChart from '../components/MiniChart';
 
 export default function Home() {
@@ -10,12 +11,11 @@ export default function Home() {
   const { name, balance, currency, holdings } = useUserStore();
   const [, setTick] = useState(0);
 
-  // Subscribe to simulated price updates
   useEffect(() => {
+    syncStocksWithConfig();
     const unsubscribe = subscribeToPriceChanges(() => {
       setTick(t => t + 1);
     });
-    // UPDATED: Every 5 seconds to simulate real endpoints better
     const interval = setInterval(() => {
       simulatePriceChange();
     }, 5000); 
@@ -28,13 +28,11 @@ export default function Home() {
 
   const allStocks = getStocks();
   
-  // Calculate Portfolio Value
   const portfolioValue = holdings.reduce((total, holding) => {
     const stock = allStocks.find(s => s.symbol === holding.symbol);
     return total + (stock ? stock.regularMarketPrice * holding.shares : 0);
   }, 0);
 
-  // Calculate Daily Change (Simulated)
   const dailyChangeValue = holdings.reduce((total, holding) => {
     const stock = allStocks.find(s => s.symbol === holding.symbol);
     return total + (stock ? stock.regularMarketChange * holding.shares : 0);
@@ -46,18 +44,20 @@ export default function Home() {
     ? (dailyChangeValue / (portfolioValue - dailyChangeValue)) * 100 
     : 0;
 
-  // Filter stocks that are in holdings for the "Your Holdings" section
   const holdingStocks = allStocks.filter(s => holdings.some(h => h.symbol === s.symbol));
+
+  const handlePriceDoubleClick = (e: React.MouseEvent, symbol: string) => {
+    e.stopPropagation();
+    navigate(`/stock/${symbol}/edit`);
+  };
 
   return (
     <div className="pb-20 max-w-7xl mx-auto min-h-screen flex flex-col">
-      {/* Header - Sticky on mobile, static on tablet/desktop */}
       <div className="px-6 pt-8 pb-6 flex items-center justify-between sticky top-0 bg-black/95 backdrop-blur-md z-20 md:static md:bg-transparent md:pt-12 md:pb-8">
         <div>
           <p className="text-neutral-500 text-sm font-medium">Welcome back,</p>
           <h1 className="text-white text-xl font-bold">{name}</h1>
         </div>
-        {/* Mobile-only Nav Buttons - Hidden on tablet (md) + */}
         <div className="flex gap-3 md:hidden">
           <button 
             onClick={() => navigate('/search')}
@@ -75,9 +75,7 @@ export default function Home() {
       </div>
 
       <div className="flex-1 px-6 space-y-8">
-        {/* Dashboard Grid for Top Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Main Value Card */}
           <div className="bg-neutral-900 rounded-3xl p-6 shadow-lg border border-neutral-800 md:col-span-2 lg:col-span-2 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none group-hover:bg-white/10 transition-colors duration-500" />
             
@@ -97,7 +95,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Buying Power Card */}
           <div className="bg-neutral-900/50 rounded-3xl p-6 border border-neutral-800/50 flex flex-col justify-center">
             <span className="text-neutral-400 text-sm mb-2">Buying Power</span>
             <span className="text-white font-bold text-3xl">{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{currency}</span>
@@ -112,7 +109,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Holdings Section */}
         <div>
           <div className="flex justify-between items-end mb-4">
             <h3 className="text-white text-lg font-bold">Your Holdings</h3>
@@ -143,8 +139,14 @@ export default function Home() {
                         <h4 className="text-white font-bold text-base leading-none mb-1 group-hover:text-neutral-300 transition-colors">{stock.symbol}</h4>
                         <p className="text-neutral-500 text-xs truncate">{stock.shortName}</p>
                       </div>
-                      <div className="text-right">
-                         <p className="text-white font-bold text-base leading-none mb-1">{stock.regularMarketPrice.toFixed(2)}{currency}</p>
+                      <div 
+                        className="text-right select-none cursor-help"
+                        onDoubleClick={(e) => handlePriceDoubleClick(e, stock.symbol)}
+                        title="Double click to edit price simulation"
+                      >
+                         <p className="text-white font-bold text-base leading-none mb-1 transition-colors group-hover:text-emerald-400">
+                           {stock.regularMarketPrice.toFixed(2)}{currency}
+                         </p>
                          <p className={`text-xs font-medium ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
                            {isPositive ? '+' : ''}{stock.regularMarketChangePercent.toFixed(2)}%
                          </p>
