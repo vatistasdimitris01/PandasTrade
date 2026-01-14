@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Share2, TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useUserStore } from '../lib/store';
-import { getStock, fetchStockChart, subscribeToPriceChanges, getLogoUrl, ChartDataPoint, fetchQuotes } from '../lib/stockData';
+import { getStock, getChartData, subscribeToPriceChanges, getLogoUrl } from '../lib/stockData';
 import TradeModal from '../components/TradeModal';
 
 const TIME_RANGES = ['1D', '1W', '1M', '3M', 'YTD', '1Y', 'ALL'];
@@ -15,31 +15,20 @@ export default function StockDetail() {
   const [range, setRange] = useState('1D');
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
   const [, setTick] = useState(0);
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
 
   useEffect(() => {
-    // Refresh quotes when detail opens
-    if (symbol) fetchQuotes([symbol]);
-
     const unsubscribe = subscribeToPriceChanges(() => {
       setTick(t => t + 1);
     });
     return () => unsubscribe();
-  }, [symbol]);
-
-  // Fetch Chart Data Effect
-  useEffect(() => {
-    if (symbol) {
-      fetchStockChart(symbol, range).then(data => {
-        setChartData(data);
-      });
-    }
-  }, [symbol, range]);
+  }, []);
 
   const stock = getStock(symbol || '');
   const holding = holdings.find(h => h.symbol === symbol);
 
+  // Robust navigation handler
   const handleBack = () => {
+    // If there is history to go back to, use it. Otherwise go home.
     if (window.history.length > 2) {
       navigate(-1);
     } else {
@@ -56,6 +45,7 @@ export default function StockDetail() {
     );
   }
 
+  const chartData = useMemo(() => getChartData(stock.symbol, range), [stock.symbol, range, stock.regularMarketPrice]);
   const isPositive = stock.regularMarketChange >= 0;
   const chartColor = isPositive ? '#10b981' : '#ef4444';
 
@@ -69,6 +59,7 @@ export default function StockDetail() {
         >
           <ChevronLeft className="text-white" size={24} />
         </button>
+        {/* Simple title for mobile only */}
         <div className="flex flex-col items-center md:hidden">
           <span className="text-white font-bold text-lg">{stock.symbol}</span>
         </div>
@@ -80,7 +71,7 @@ export default function StockDetail() {
       <div className="flex-1 px-6 pb-24 lg:grid lg:grid-cols-3 lg:gap-12 lg:pb-12">
         {/* Left Column: Chart & Visuals */}
         <div className="lg:col-span-2 flex flex-col">
-           {/* Desktop/Tablet Title */}
+           {/* Desktop/Tablet Title - Visible on md+ */}
            <div className="hidden md:flex items-center gap-6 mb-8">
               <div className="w-20 h-20 rounded-2xl bg-white flex items-center justify-center overflow-hidden p-3 shadow-lg">
                  <img src={getLogoUrl(stock.symbol)} alt={stock.symbol} className="w-full h-full object-contain" />
@@ -91,7 +82,7 @@ export default function StockDetail() {
               </div>
            </div>
 
-           {/* Mobile Price Header */}
+           {/* Mobile Price Header (Hidden on md+) */}
            <div className="text-center mb-8 md:hidden">
             <div className="w-16 h-16 rounded-2xl bg-white mx-auto mb-4 flex items-center justify-center p-2">
               <img src={getLogoUrl(stock.symbol)} alt={stock.symbol} className="w-full h-full object-contain" />
@@ -160,9 +151,10 @@ export default function StockDetail() {
           </div>
         </div>
 
-        {/* Right Column: Stats & Actions */}
+        {/* Right Column: Stats & Actions (Sticky on Desktop) */}
         <div className="lg:col-span-1 lg:sticky lg:top-8 h-fit space-y-6">
            
+           {/* Desktop/Tablet Price Card (Visible on md+) */}
            <div className="hidden md:block bg-neutral-900 rounded-3xl p-8 border border-neutral-800">
               <span className="text-neutral-400 text-sm">Current Price</span>
               <h2 className="text-6xl font-bold text-white mb-4 mt-2 tracking-tight">{stock.regularMarketPrice.toFixed(2)}{currency}</h2>
@@ -174,6 +166,7 @@ export default function StockDetail() {
               </div>
            </div>
 
+           {/* Position Info */}
            {holding && (
              <div className="bg-neutral-900 rounded-3xl p-6 border border-neutral-800 shadow-lg relative overflow-hidden">
                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
@@ -208,18 +201,19 @@ export default function StockDetail() {
              </div>
            )}
 
+           {/* Stats Grid */}
            <div className="grid grid-cols-2 gap-4">
             <div className="bg-neutral-900/50 p-4 rounded-2xl border border-neutral-800/50">
               <p className="text-neutral-500 text-xs mb-1 uppercase tracking-wider">Open</p>
-              <p className="text-white font-bold text-lg">{stock.regularMarketOpen?.toFixed(2) || '-'}</p>
+              <p className="text-white font-bold text-lg">{stock.regularMarketOpen.toFixed(2)}</p>
             </div>
             <div className="bg-neutral-900/50 p-4 rounded-2xl border border-neutral-800/50">
               <p className="text-neutral-500 text-xs mb-1 uppercase tracking-wider">High</p>
-              <p className="text-white font-bold text-lg">{stock.regularMarketDayHigh?.toFixed(2) || '-'}</p>
+              <p className="text-white font-bold text-lg">{stock.regularMarketDayHigh.toFixed(2)}</p>
             </div>
             <div className="bg-neutral-900/50 p-4 rounded-2xl border border-neutral-800/50">
               <p className="text-neutral-500 text-xs mb-1 uppercase tracking-wider">Low</p>
-              <p className="text-white font-bold text-lg">{stock.regularMarketDayLow?.toFixed(2) || '-'}</p>
+              <p className="text-white font-bold text-lg">{stock.regularMarketDayLow.toFixed(2)}</p>
             </div>
             <div className="bg-neutral-900/50 p-4 rounded-2xl border border-neutral-800/50">
               <p className="text-neutral-500 text-xs mb-1 uppercase tracking-wider">Vol</p>
@@ -227,6 +221,7 @@ export default function StockDetail() {
             </div>
            </div>
 
+           {/* Desktop/Tablet Trade Button (Inline) - Visible on md+ */}
            <button
              onClick={() => setIsTradeModalOpen(true)}
              className="hidden md:flex w-full bg-white text-black font-bold text-lg py-4 rounded-2xl hover:bg-neutral-200 transition-colors shadow-xl active:scale-[0.98] transform items-center justify-center gap-2"
@@ -237,6 +232,7 @@ export default function StockDetail() {
         </div>
       </div>
 
+      {/* Mobile Sticky Action Button - Hidden on md+ */}
       <div className="fixed bottom-6 left-6 right-6 md:hidden z-20">
         <button
           onClick={() => setIsTradeModalOpen(true)}
