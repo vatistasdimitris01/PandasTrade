@@ -15,7 +15,7 @@ export interface StockPriceConfig {
   max: number;
 }
 
-interface UserSettings {
+interface UserState {
   name: string;
   avatar: string;
   balance: number;
@@ -23,131 +23,96 @@ interface UserSettings {
   holdings: Holding[];
   stockPriceConfigs: Record<string, StockPriceConfig>;
   setName: (name: string) => void;
-  setAvatar: (url: string) => void;
+  setAvatar: (avatar: string) => void;
   setBalance: (balance: number) => void;
   setCurrency: (currency: string) => void;
-  setHoldings: (holdings: Holding[]) => void;
-  updateHoldingShares: (symbol: string, newShares: number) => void;
-  setStockPriceConfig: (symbol: string, config: StockPriceConfig) => void;
-  buyStock: (symbol: string, shares: number, pricePerShare: number) => boolean;
-  sellStock: (symbol: string, shares: number, pricePerShare: number) => boolean;
+  buyStock: (symbol: string, shares: number, price: number) => boolean;
+  sellStock: (symbol: string, shares: number, price: number) => boolean;
+  updateHoldingShares: (symbol: string, shares: number) => void;
   resetAccount: () => void;
+  setStockPriceConfig: (symbol: string, config: StockPriceConfig) => void;
 }
 
-export const useUserStore = create<UserSettings>()(
+// Fixed missing export by completing the useUserStore implementation
+export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
-      name: 'Dimitris',
-      avatar: 'https://pbs.twimg.com/profile_images/1977295267805241344/vwSoKSwf_400x400.jpg',
-      balance: 160,
-      currency: '€',
-      holdings: [
-        { symbol: 'AAPL', shares: 2, avgCost: 175.50 },
-        { symbol: 'TSLA', shares: 1, avgCost: 210.00 },
-      ],
+      name: 'Panda Trader',
+      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=150',
+      balance: 10000,
+      currency: '$',
+      holdings: [],
       stockPriceConfigs: {},
       setName: (name) => set({ name }),
       setAvatar: (avatar) => set({ avatar }),
       setBalance: (balance) => set({ balance }),
       setCurrency: (currency) => set({ currency }),
-      setHoldings: (holdings) => set({ holdings }),
-      
-      updateHoldingShares: (symbol, newShares) => {
-        const state = get();
-        if (newShares <= 0) {
-          set({ holdings: state.holdings.filter(h => h.symbol !== symbol) });
+      buyStock: (symbol, shares, price) => {
+        const { balance, holdings } = get();
+        const cost = shares * price;
+        if (balance < cost) return false;
+
+        const existingHolding = holdings.find((h) => h.symbol === symbol);
+        let newHoldings;
+        if (existingHolding) {
+          const totalShares = existingHolding.shares + shares;
+          const currentTotalCost = existingHolding.avgCost * existingHolding.shares;
+          const newTotalCost = currentTotalCost + cost;
+          newHoldings = holdings.map((h) =>
+            h.symbol === symbol
+              ? { ...h, shares: totalShares, avgCost: newTotalCost / totalShares }
+              : h
+          );
+        } else {
+          newHoldings = [...holdings, { symbol, shares, avgCost: price }];
+        }
+
+        set({ balance: balance - cost, holdings: newHoldings });
+        return true;
+      },
+      sellStock: (symbol, shares, price) => {
+        const { balance, holdings } = get();
+        const existingHolding = holdings.find((h) => h.symbol === symbol);
+        if (!existingHolding || existingHolding.shares < shares) return false;
+
+        const proceeds = shares * price;
+        const newHoldings = holdings
+          .map((h) =>
+            h.symbol === symbol ? { ...h, shares: h.shares - shares } : h
+          )
+          .filter((h) => h.shares > 0);
+
+        set({ balance: balance + proceeds, holdings: newHoldings });
+        return true;
+      },
+      updateHoldingShares: (symbol, shares) => {
+        const { holdings } = get();
+        if (shares <= 0) {
+          set({ holdings: holdings.filter((h) => h.symbol !== symbol) });
         } else {
           set({
-            holdings: state.holdings.map(h => 
-              h.symbol === symbol ? { ...h, shares: newShares } : h
-            )
+            holdings: holdings.map((h) =>
+              h.symbol === symbol ? { ...h, shares } : h
+            ),
           });
         }
       },
-
-      setStockPriceConfig: (symbol, config) => {
+      resetAccount: () =>
+        set({
+          balance: 10000,
+          holdings: [],
+          stockPriceConfigs: {},
+        }),
+      setStockPriceConfig: (symbol, config) =>
         set((state) => ({
           stockPriceConfigs: {
             ...state.stockPriceConfigs,
             [symbol]: config,
           },
-        }));
-      },
-
-      buyStock: (symbol, shares, pricePerShare) => {
-        const state = get();
-        const totalCost = shares * pricePerShare;
-
-        if (totalCost > state.balance) {
-          return false;
-        }
-
-        const existingHolding = state.holdings.find((h) => h.symbol === symbol);
-        let newHoldings: Holding[];
-
-        if (existingHolding) {
-          const totalShares = existingHolding.shares + shares;
-          const totalValue = (existingHolding.shares * existingHolding.avgCost) + totalCost;
-          const newAvgCost = totalValue / totalShares;
-
-          newHoldings = state.holdings.map((h) =>
-            h.symbol === symbol
-              ? { ...h, shares: totalShares, avgCost: newAvgCost }
-              : h
-          );
-        } else {
-          newHoldings = [
-            ...state.holdings,
-            { symbol, shares, avgCost: pricePerShare },
-          ];
-        }
-
-        set({
-          balance: state.balance - totalCost,
-          holdings: newHoldings,
-        });
-        return true;
-      },
-      sellStock: (symbol, shares, pricePerShare) => {
-        const state = get();
-        const existingHolding = state.holdings.find((h) => h.symbol === symbol);
-
-        if (!existingHolding || existingHolding.shares < shares) {
-          return false;
-        }
-
-        const totalValue = shares * pricePerShare;
-        const remainingShares = existingHolding.shares - shares;
-
-        let newHoldings: Holding[];
-        if (remainingShares === 0) {
-          newHoldings = state.holdings.filter((h) => h.symbol !== symbol);
-        } else {
-          newHoldings = state.holdings.map((h) =>
-            h.symbol === symbol ? { ...h, shares: remainingShares } : h
-          );
-        }
-
-        set({
-          balance: state.balance + totalValue,
-          holdings: newHoldings,
-        });
-        return true;
-      },
-      resetAccount: () => set({
-        name: 'Dimitris',
-        avatar: 'https://pbs.twimg.com/profile_images/1977295267805241344/vwSoKSwf_400x400.jpg',
-        balance: 160,
-        currency: '€',
-        holdings: [
-          { symbol: 'AAPL', shares: 2, avgCost: 175.50 },
-          { symbol: 'TSLA', shares: 1, avgCost: 210.00 },
-        ],
-        stockPriceConfigs: {},
-      })
+        })),
     }),
     {
-      name: 'pandas-trade-storage',
+      name: 'user-storage',
       storage: createJSONStorage(() => localStorage),
     }
   )
