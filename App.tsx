@@ -6,6 +6,7 @@ import StockDetail from './pages/StockDetail';
 import StockEdit from './pages/StockEdit';
 import Search from './pages/Search';
 import Settings from './pages/Settings';
+import Watchlist from './pages/Watchlist';
 import Layout from './components/Layout';
 import { Toaster } from 'react-hot-toast';
 
@@ -18,6 +19,7 @@ function AppContent() {
           <Route path="/stock/:symbol" element={<StockDetail />} />
           <Route path="/stock/:symbol/edit" element={<StockEdit />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/watchlist" element={<Watchlist />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </div>

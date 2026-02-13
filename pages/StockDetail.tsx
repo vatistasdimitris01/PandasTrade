@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Share2, TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, Share2, TrendingUp, TrendingDown, ArrowUpRight, Star } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useUserStore } from '../lib/store';
 import { getStock, getChartData, subscribeToPriceChanges, getLogoUrl, syncStocksWithConfig } from '../lib/stockData';
@@ -12,7 +11,7 @@ const TIME_RANGES = ['1D', '1W', '1M', '3M', 'YTD', '1Y', 'ALL'];
 export default function StockDetail() {
   const { symbol } = useParams<{ symbol: string }>();
   const navigate = useNavigate();
-  const { currency, holdings } = useUserStore();
+  const { currency, holdings, watchlist, toggleWatchlist } = useUserStore();
   const [range, setRange] = useState('1D');
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false);
   const [, setTick] = useState(0);
@@ -27,6 +26,7 @@ export default function StockDetail() {
 
   const stock = getStock(symbol || '');
   const holding = holdings.find(h => h.symbol === symbol);
+  const isWatched = watchlist.includes(symbol || '');
 
   const handleBack = () => {
     if (window.history.length > 2) {
@@ -44,7 +44,7 @@ export default function StockDetail() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center bg-black">
         <h2 className="text-white text-2xl font-bold mb-2">Stock Not Found</h2>
-        <button onClick={handleBack} className="text-neutral-400 hover:text-white">Go Back</button>
+        <button onClick={handleBack} className="text-neutral-400 md:hover:text-white">Go Back</button>
       </div>
     );
   }
@@ -54,25 +54,35 @@ export default function StockDetail() {
   const chartColor = isPositive ? '#10b981' : '#ef4444';
 
   return (
-    <div className="min-h-screen bg-black flex flex-col relative max-w-7xl mx-auto">
-      <div className="px-6 pt-8 pb-4 flex items-center justify-between">
+    <div className="min-h-screen bg-black flex flex-col relative max-w-7xl mx-auto pb-32 md:pb-12">
+      <div className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur-md z-30">
         <button 
           onClick={handleBack} 
-          className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center hover:bg-neutral-800 transition-colors active:scale-90 transform duration-150"
+          className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center md:hover:bg-neutral-800 transition-colors active:scale-90 transform duration-150"
         >
           <ChevronLeft className="text-white" size={24} />
         </button>
         <div className="flex flex-col items-center md:hidden">
           <span className="text-white font-bold text-lg">{stock.symbol}</span>
         </div>
-        <button className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center hover:bg-neutral-800 transition-colors active:scale-90 transform duration-150">
-          <Share2 className="text-neutral-400" size={20} />
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => symbol && toggleWatchlist(symbol)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${
+              isWatched ? 'bg-yellow-500/10 text-yellow-500' : 'bg-neutral-900 text-neutral-400'
+            } md:hover:bg-neutral-800`}
+          >
+            <Star size={20} fill={isWatched ? 'currentColor' : 'none'} />
+          </button>
+          <button className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center md:hover:bg-neutral-800 transition-colors active:scale-90 transform duration-150">
+            <Share2 className="text-neutral-400" size={20} />
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 px-6 pb-24 lg:grid lg:grid-cols-3 lg:gap-12 lg:pb-12">
+      <div className="flex-1 px-6 lg:grid lg:grid-cols-3 lg:gap-12 lg:pb-12">
         <div className="lg:col-span-2 flex flex-col">
-           <div className="hidden md:flex items-center gap-6 mb-8">
+           <div className="hidden md:flex items-center gap-6 mb-8 mt-8">
               <div className="w-20 h-20 rounded-2xl bg-white flex items-center justify-center overflow-hidden p-3 shadow-lg">
                  <img src={getLogoUrl(stock.symbol)} alt={stock.symbol} className="w-full h-full object-contain" />
               </div>
@@ -82,13 +92,13 @@ export default function StockDetail() {
               </div>
            </div>
 
-           <div className="text-center mb-8 md:hidden">
+           <div className="text-center mb-8 md:hidden mt-4">
             <div className="w-16 h-16 rounded-2xl bg-white mx-auto mb-4 flex items-center justify-center p-2">
               <img src={getLogoUrl(stock.symbol)} alt={stock.symbol} className="w-full h-full object-contain" />
             </div>
             <p className="text-neutral-400 text-sm font-medium mb-1">{stock.shortName}</p>
             <h1 
-              className="text-white text-5xl font-bold mb-3 tracking-tight select-none cursor-help hover:text-emerald-400 transition-colors"
+              className="text-white text-5xl font-bold mb-3 tracking-tight select-none md:hover:text-emerald-400 transition-colors"
               onDoubleClick={handlePriceDoubleClick}
             >
               {stock.regularMarketPrice.toFixed(2)}{currency}
@@ -112,7 +122,7 @@ export default function StockDetail() {
                   </linearGradient>
                 </defs>
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '8px' }}
+                  contentStyle={{ backgroundColor: '#171717', border: '1px solid #333', borderRadius: '12px', color: '#fff' }}
                   itemStyle={{ color: '#fff' }}
                   cursor={{ stroke: '#525252', strokeWidth: 1, strokeDasharray: '4 4' }}
                   labelStyle={{ display: 'none' }}
@@ -132,16 +142,16 @@ export default function StockDetail() {
             </ResponsiveContainer>
           </div>
 
-          <div className="mb-8">
-            <div className="flex justify-between bg-neutral-900 rounded-xl p-1 lg:max-w-md lg:mx-auto">
+          <div className="mb-8 overflow-x-auto no-scrollbar">
+            <div className="flex justify-between bg-neutral-900 rounded-xl p-1 lg:max-w-md lg:mx-auto min-w-max md:min-w-0">
               {TIME_RANGES.map((r) => (
                 <button
                   key={r}
                   onClick={() => setRange(r)}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
                     range === r 
                       ? 'bg-neutral-800 text-white shadow-sm' 
-                      : 'text-neutral-500 hover:text-neutral-300'
+                      : 'text-neutral-500 md:hover:text-neutral-300'
                   }`}
                 >
                   {r}
@@ -151,12 +161,12 @@ export default function StockDetail() {
           </div>
         </div>
 
-        <div className="lg:col-span-1 lg:sticky lg:top-8 h-fit space-y-6">
+        <div className="lg:col-span-1 lg:sticky lg:top-24 h-fit space-y-6">
            
            <div className="hidden md:block bg-neutral-900 rounded-3xl p-8 border border-neutral-800">
               <span className="text-neutral-400 text-sm">Current Price</span>
               <h2 
-                className="text-6xl font-bold text-white mb-4 mt-2 tracking-tight select-none cursor-help hover:text-emerald-400 transition-colors"
+                className="text-6xl font-bold text-white mb-4 mt-2 tracking-tight select-none md:hover:text-emerald-400 transition-colors cursor-help"
                 onDoubleClick={handlePriceDoubleClick}
               >
                 {stock.regularMarketPrice.toFixed(2)}{currency}
@@ -172,8 +182,7 @@ export default function StockDetail() {
            {holding && (
              <div className="bg-neutral-900 rounded-3xl p-6 border border-neutral-800 shadow-lg relative overflow-hidden">
                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-               <h3 className="text-white font-bold mb-6 flex items-center gap-2 relative z-10">
-                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+               <h3 className="text-white font-bold mb-6 flex items-center gap-2 relative z-10 text-sm uppercase tracking-widest opacity-60">
                  Your Position
                </h3>
                <div className="flex justify-between mb-4 pb-4 border-b border-neutral-800 relative z-10">
@@ -224,7 +233,7 @@ export default function StockDetail() {
 
            <button
              onClick={() => setIsTradeModalOpen(true)}
-             className="hidden md:flex w-full bg-white text-black font-bold text-lg py-4 rounded-2xl hover:bg-neutral-200 transition-colors shadow-xl active:scale-[0.98] transform items-center justify-center gap-2"
+             className="hidden md:flex w-full bg-white text-black font-bold text-lg py-4 rounded-2xl md:hover:bg-neutral-200 transition-colors shadow-xl active:scale-[0.98] transform items-center justify-center gap-2"
            >
              <span>Trade {stock.symbol}</span>
              <ArrowUpRight size={20} />
@@ -232,10 +241,10 @@ export default function StockDetail() {
         </div>
       </div>
 
-      <div className="fixed bottom-6 left-6 right-6 md:hidden z-20">
+      <div className="fixed bottom-24 left-6 right-6 md:hidden z-20">
         <button
           onClick={() => setIsTradeModalOpen(true)}
-          className="w-full bg-white text-black font-bold text-lg py-4 rounded-2xl hover:bg-neutral-200 transition-colors shadow-xl active:scale-[0.98] transform"
+          className="w-full bg-white text-black font-bold text-lg py-4 rounded-2xl active:scale-[0.98] transform shadow-2xl shadow-emerald-500/20"
         >
           Trade
         </button>

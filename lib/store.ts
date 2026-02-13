@@ -21,12 +21,14 @@ interface UserSettings {
   balance: number;
   currency: string;
   holdings: Holding[];
+  watchlist: string[];
   stockPriceConfigs: Record<string, StockPriceConfig>;
   setName: (name: string) => void;
   setAvatar: (url: string) => void;
   setBalance: (balance: number) => void;
   setCurrency: (currency: string) => void;
   setHoldings: (holdings: Holding[]) => void;
+  toggleWatchlist: (symbol: string) => void;
   updateHoldingShares: (symbol: string, newShares: number) => void;
   setStockPriceConfig: (symbol: string, config: StockPriceConfig) => void;
   buyStock: (symbol: string, shares: number, pricePerShare: number) => boolean;
@@ -45,6 +47,7 @@ export const useUserStore = create<UserSettings>()(
         { symbol: 'AAPL', shares: 2, avgCost: 175.50 },
         { symbol: 'TSLA', shares: 1, avgCost: 210.00 },
       ],
+      watchlist: ['AAPL', 'TSLA', 'NVDA'],
       stockPriceConfigs: {},
       setName: (name) => set({ name }),
       setAvatar: (avatar) => set({ avatar }),
@@ -52,6 +55,15 @@ export const useUserStore = create<UserSettings>()(
       setCurrency: (currency) => set({ currency }),
       setHoldings: (holdings) => set({ holdings }),
       
+      toggleWatchlist: (symbol) => {
+        const { watchlist } = get();
+        if (watchlist.includes(symbol)) {
+          set({ watchlist: watchlist.filter(s => s !== symbol) });
+        } else {
+          set({ watchlist: [...watchlist, symbol] });
+        }
+      },
+
       updateHoldingShares: (symbol, newShares) => {
         const state = get();
         if (newShares <= 0) {
@@ -143,6 +155,7 @@ export const useUserStore = create<UserSettings>()(
           { symbol: 'AAPL', shares: 2, avgCost: 175.50 },
           { symbol: 'TSLA', shares: 1, avgCost: 210.00 },
         ],
+        watchlist: ['AAPL', 'TSLA', 'NVDA'],
         stockPriceConfigs: {},
       })
     }),
