@@ -1,8 +1,28 @@
-
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { LayoutDashboard, Search, Settings, Star, CandlestickChart } from 'lucide-react';
+import { LayoutDashboard, Search, Settings, Star } from 'lucide-react';
 import { useUserStore } from '../lib/store';
+
+// Custom Candlestick Logo Component
+const TradingLogo = ({ size = 24 }: { size?: number }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    <path d="M7 2v3" stroke="#10b981" />
+    <rect x="5" y="5" width="4" height="10" rx="1" fill="#10b981" />
+    <path d="M7 15v7" stroke="#10b981" />
+    <path d="M17 2v10" stroke="#ef4444" />
+    <rect x="15" y="12" width="4" height="6" rx="1" fill="#ef4444" stroke="#ef4444" />
+    <path d="M17 18v4" stroke="#ef4444" />
+  </svg>
+);
 
 export default function Layout({ children }: { children?: React.ReactNode }) {
   const location = useLocation();
@@ -47,8 +67,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
       <aside className="hidden md:flex flex-col md:w-20 lg:w-72 h-screen sticky top-0 border-r border-neutral-900/50 bg-black/50 backdrop-blur-xl z-50 transition-all duration-300">
         <div className="px-0 lg:px-8 pt-10 pb-12 flex justify-center lg:justify-start">
            <div className="flex items-center gap-2">
-             <div className="flex items-center justify-center flex-shrink-0 bg-white rounded-lg p-1.5 shadow-lg shadow-white/10">
-               <CandlestickChart size={24} className="text-black" />
+             <div className="flex items-center justify-center flex-shrink-0 bg-neutral-900 rounded-lg p-1.5 shadow-lg border border-neutral-800">
+               <TradingLogo size={24} />
              </div>
              <h1 className="font-bold text-xl tracking-tight text-white hidden lg:block mt-0.5">
               Pandas<span className="text-neutral-600">Trade</span>
@@ -86,8 +106,8 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile Dock - Icons only with PWA safe area */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-neutral-900/50 z-50 flex items-center justify-between px-6 pb-safe safe-area-bottom">
+      {/* Mobile Dock - Optimized for iOS Home Indicator */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-neutral-900/50 z-50 flex items-center justify-between px-6 pb-safe">
         <MobileDockItem to="/" icon={<LayoutDashboard size={24} />} />
         <MobileDockItem to="/search" icon={<Search size={24} />} />
         <MobileDockItem to="/watchlist" icon={<Star size={24} />} />
