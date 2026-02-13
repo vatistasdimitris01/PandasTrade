@@ -11,6 +11,12 @@ export default function Search() {
   const { currency } = useUserStore();
   const stocks = getAllStocks();
 
+  // Filter stocks based on search query
+  const filteredStocks = stocks.filter(stock => 
+    stock.symbol.toLowerCase().includes(query.toLowerCase()) || 
+    stock.shortName.toLowerCase().includes(query.toLowerCase())
+  );
+
   const handleBack = () => {
     if (window.history.length > 2) {
       navigate(-1);

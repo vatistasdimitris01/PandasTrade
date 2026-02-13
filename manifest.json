@@ -1,21 +1,26 @@
+
 {
   "name": "PandasTrade",
   "short_name": "PandasTrade",
-  "start_url": "./",
+  "description": "Professional Real-time Stock Simulation & Trading",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",
+  "categories": ["finance", "trading"],
   "icons": [
     {
-      "src": "https://pbs.twimg.com/profile_images/1977295267805241344/vwSoKSwf_400x400.jpg",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5v4'/%3E%3Crect width='4' height='6' x='7' y='9' rx='1'/%3E%3Cpath d='M9 15v2'/%3E%3Cpath d='M17 3v2'/%3E%3Crect width='4' height='8' x='15' y='5' rx='1'/%3E%3Cpath d='M17 13v3'/%3E%3Cpath d='M3 3v16a2 2 0 0 0 2 2h16'/%3E%3C/svg%3E",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "https://pbs.twimg.com/profile_images/1977295267805241344/vwSoKSwf_400x400.jpg",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5v4'/%3E%3Crect width='4' height='6' x='7' y='9' rx='1'/%3E%3Cpath d='M9 15v2'/%3E%3Cpath d='M17 3v2'/%3E%3Crect width='4' height='8' x='15' y='5' rx='1'/%3E%3Cpath d='M17 13v3'/%3E%3Cpath d='M3 3v16a2 2 0 0 0 2 2h16'/%3E%3C/svg%3E",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }

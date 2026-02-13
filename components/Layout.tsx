@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { LayoutDashboard, Search, Settings, Star } from 'lucide-react';
+import { LayoutDashboard, Search, Settings, Star, CandlestickChart } from 'lucide-react';
 import { useUserStore } from '../lib/store';
 
 export default function Layout({ children }: { children?: React.ReactNode }) {
@@ -31,26 +32,26 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     return (
       <Link
         to={to}
-        className={`flex flex-1 items-center justify-center py-4 transition-all active:scale-75 ${
+        className={`flex flex-1 flex-col items-center justify-center py-3 transition-all active:scale-75 ${
           isActive ? 'text-white' : 'text-neutral-500'
         }`}
       >
-        {icon}
+        <div className="mb-0.5">{icon}</div>
       </Link>
     );
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex font-sans selection:bg-neutral-800 selection:text-white pb-20 md:pb-0">
+    <div className="min-h-screen bg-black text-white flex font-sans selection:bg-neutral-800 selection:text-white pb-24 md:pb-0">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col md:w-20 lg:w-72 h-screen sticky top-0 border-r border-neutral-900/50 bg-black/50 backdrop-blur-xl z-50 transition-all duration-300">
         <div className="px-0 lg:px-8 pt-10 pb-12 flex justify-center lg:justify-start">
-           <div className="flex items-center gap-1">
-             <div className="flex items-center justify-center flex-shrink-0">
-               <span className="text-white font-extrabold text-3xl lg:text-4xl tracking-tighter">P</span>
+           <div className="flex items-center gap-2">
+             <div className="flex items-center justify-center flex-shrink-0 bg-white rounded-lg p-1.5 shadow-lg shadow-white/10">
+               <CandlestickChart size={24} className="text-black" />
              </div>
-             <h1 className="font-bold text-xl tracking-tight text-white hidden lg:block mt-1">
-              andas<span className="text-neutral-600">Trade</span>
+             <h1 className="font-bold text-xl tracking-tight text-white hidden lg:block mt-0.5">
+              Pandas<span className="text-neutral-600">Trade</span>
             </h1>
            </div>
         </div>
@@ -85,15 +86,15 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile Dock - Icons only */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-neutral-900 z-50 flex items-center justify-between px-6 pb-safe safe-area-bottom">
+      {/* Mobile Dock - Icons only with PWA safe area */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-neutral-900/50 z-50 flex items-center justify-between px-6 pb-safe safe-area-bottom">
         <MobileDockItem to="/" icon={<LayoutDashboard size={24} />} />
         <MobileDockItem to="/search" icon={<Search size={24} />} />
         <MobileDockItem to="/watchlist" icon={<Star size={24} />} />
         <MobileDockItem to="/settings" icon={<Settings size={24} />} />
       </div>
 
-      <main className="flex-1 w-full min-h-screen bg-black overflow-x-hidden">
+      <main className="flex-1 w-full min-h-screen bg-black overflow-x-hidden pt-safe">
         {children}
       </main>
     </div>
