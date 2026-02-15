@@ -23,6 +23,12 @@ interface UserSettings {
   holdings: Holding[];
   watchlist: string[];
   stockPriceConfigs: Record<string, StockPriceConfig>;
+  // Security
+  pin: string | null;
+  isSecurityEnabled: boolean;
+  isBiometricEnabled: boolean; // Added for real Face ID/Touch ID
+  isLocked: boolean;
+  
   setName: (name: string) => void;
   setAvatar: (url: string) => void;
   setBalance: (balance: number) => void;
@@ -34,6 +40,11 @@ interface UserSettings {
   buyStock: (symbol: string, shares: number, pricePerShare: number) => boolean;
   sellStock: (symbol: string, shares: number, pricePerShare: number) => boolean;
   resetAccount: () => void;
+  // Security Actions
+  setPin: (pin: string | null) => void;
+  setSecurityEnabled: (enabled: boolean) => void;
+  setBiometricEnabled: (enabled: boolean) => void;
+  setLocked: (locked: boolean) => void;
 }
 
 export const useUserStore = create<UserSettings>()(
@@ -49,6 +60,13 @@ export const useUserStore = create<UserSettings>()(
       ],
       watchlist: ['AAPL', 'TSLA', 'NVDA'],
       stockPriceConfigs: {},
+      
+      // Security Defaults
+      pin: null,
+      isSecurityEnabled: false,
+      isBiometricEnabled: false,
+      isLocked: false,
+
       setName: (name) => set({ name }),
       setAvatar: (avatar) => set({ avatar }),
       setBalance: (balance) => set({ balance }),
@@ -157,11 +175,24 @@ export const useUserStore = create<UserSettings>()(
         ],
         watchlist: ['AAPL', 'TSLA', 'NVDA'],
         stockPriceConfigs: {},
-      })
+        pin: null,
+        isSecurityEnabled: false,
+        isBiometricEnabled: false,
+        isLocked: false,
+      }),
+
+      setPin: (pin) => set({ pin }),
+      setSecurityEnabled: (isSecurityEnabled) => set({ isSecurityEnabled }),
+      setBiometricEnabled: (isBiometricEnabled) => set({ isBiometricEnabled }),
+      setLocked: (isLocked) => set({ isLocked }),
     }),
     {
       name: 'pandas-trade-storage',
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => {
+        const { isLocked, ...persistedState } = state;
+        return persistedState;
+      }
     }
   )
 );
