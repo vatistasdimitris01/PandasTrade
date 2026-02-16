@@ -2,14 +2,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  TrendingUp, 
-  TrendingDown, 
   Search as SearchIcon, 
-  ChevronDown, 
   ArrowRight,
-  ChevronRight
+  ChevronDown
 } from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer, YAxis, ReferenceLine } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts';
 import { useUserStore } from '../lib/store';
 import { 
   getStocks, 
@@ -21,11 +18,11 @@ import {
   getChartData 
 } from '../lib/stockData';
 
-const TIME_RANGES = ['1D', '1W', '1M', '1Y', 'Max'];
+const TIME_RANGES = ['1D', '1W', '1M', '1Y', 'ALL'];
 
 export default function Home() {
   const navigate = useNavigate();
-  const { name, balance, currency, holdings, avatar } = useUserStore();
+  const { balance, currency, holdings, avatar } = useUserStore();
   const [selectedRange, setSelectedRange] = useState('1D');
   const [, setTick] = useState(0);
 
@@ -63,54 +60,41 @@ export default function Home() {
   const isPositive = dailyChangeValue >= 0;
   const dailyChangePercent = portfolioValue > 0 
     ? (dailyChangeValue / (portfolioValue - dailyChangeValue)) * 100 
-    : 1.07; // Default to match image if no holdings
+    : 1.07;
 
   const holdingStocks = allStocks.filter(s => holdings.some(h => h.symbol === s.symbol));
-  
-  // Chart data for the main view
-  const mainChartData = useMemo(() => {
-    // We use a dummy symbol or an aggregate. For UI parity, we use a consistent set.
-    return getChartData('AAPL', selectedRange);
-  }, [selectedRange]);
-
-  const baselineValue = mainChartData.length > 0 ? mainChartData[0].close : 0;
+  const mainChartData = useMemo(() => getChartData('AAPL', selectedRange), [selectedRange]);
 
   return (
-    <div className="pb-40 pt-safe px-6 max-w-2xl mx-auto min-h-screen bg-transparent">
-      {/* Top Navigation Bar */}
-      <header className="flex items-center justify-between py-6 mb-8">
-        <div className="flex items-baseline gap-2">
-          <h1 className="text-white text-3xl font-black tracking-tight">Wealth</h1>
-          <span className="text-neutral-500 text-3xl font-medium">Cash</span>
-        </div>
-        <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 shadow-lg">
-          <img src={avatar} alt={name} className="w-full h-full object-cover" />
+    <div className="pb-44 pt-safe px-8 max-w-xl mx-auto min-h-screen bg-black">
+      {/* Ultra-Minimal Header */}
+      <header className="flex items-center justify-between pt-12 mb-12">
+        <h1 className="text-white text-2xl font-black tracking-tight">Wealth</h1>
+        <div className="w-8 h-8 rounded-full overflow-hidden grayscale hover:grayscale-0 transition-all cursor-pointer">
+          <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
         </div>
       </header>
 
-      {/* Brokerage Section */}
-      <section className="mb-4">
-        <button className="flex items-center gap-1 text-neutral-500 font-bold mb-2 md:hover:text-neutral-300 transition-colors">
-          Brokerage <ChevronDown size={18} />
-        </button>
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-white text-5xl font-black tracking-tighter tabular-nums">
-            {totalAccountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
+      {/* Hero Balance */}
+      <section className="mb-10">
+        <div className="flex flex-col">
+          <h2 className="text-white text-6xl font-black tracking-tighter mb-2 tabular-nums">
+            {totalAccountValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span className="text-neutral-600 ml-1">{currency}</span>
           </h2>
-          <div className={`flex items-center gap-1 font-black text-lg ${isPositive ? 'text-white' : 'text-red-500'}`}>
-            {isPositive ? '▲' : '▼'} {Math.abs(dailyChangePercent).toFixed(2)} %
+          <div className={`text-lg font-bold tracking-tight ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+            {isPositive ? '▲' : '▼'} {Math.abs(dailyChangePercent).toFixed(2)}%
           </div>
         </div>
       </section>
 
-      {/* Time Range Selectors */}
-      <section className="flex justify-between py-8">
+      {/* Minimal Time Ranges */}
+      <section className="flex justify-between py-6 border-b border-white/5">
         {TIME_RANGES.map((r) => (
           <button
             key={r}
             onClick={() => setSelectedRange(r)}
-            className={`text-sm font-black transition-all ${
-              selectedRange === r ? 'text-white' : 'text-neutral-600'
+            className={`text-[10px] font-black tracking-widest transition-all px-2 py-1 rounded-md ${
+              selectedRange === r ? 'text-white' : 'text-neutral-700'
             }`}
           >
             {r}
@@ -118,27 +102,21 @@ export default function Home() {
         ))}
       </section>
 
-      {/* Main Interactive Chart */}
-      <section className="h-64 w-full mb-12 relative">
+      {/* Integrated Chart */}
+      <section className="h-56 w-full my-10">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={mainChartData}>
             <defs>
               <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={isPositive ? '#fff' : '#ef4444'} stopOpacity={0.1}/>
-                <stop offset="95%" stopColor={isPositive ? '#fff' : '#ef4444'} stopOpacity={0}/>
+                <stop offset="5%" stopColor={isPositive ? '#10b981' : '#ef4444'} stopOpacity={0.15}/>
+                <stop offset="95%" stopColor={isPositive ? '#10b981' : '#ef4444'} stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <ReferenceLine 
-              y={baselineValue} 
-              stroke="#262626" 
-              strokeDasharray="3 3" 
-              strokeWidth={2}
-            />
             <Area 
               type="monotone" 
               dataKey="close" 
-              stroke={isPositive ? '#fff' : '#ef4444'} 
-              strokeWidth={3} 
+              stroke={isPositive ? '#10b981' : '#ef4444'} 
+              strokeWidth={2} 
               fill="url(#chartGradient)"
               dot={false}
               isAnimationActive={true}
@@ -148,64 +126,63 @@ export default function Home() {
         </ResponsiveContainer>
       </section>
 
-      {/* Investments List Header */}
-      <section className="flex items-center justify-between mb-6">
-        <h3 className="text-white text-xl font-black">Investments</h3>
-        <button className="flex items-center gap-1 text-neutral-500 font-bold text-sm">
-          Since buy <ChevronDown size={14} />
-        </button>
-      </section>
-
-      {/* Holdings List */}
-      <section className="space-y-6 mb-10">
+      {/* Asset List */}
+      <section className="space-y-8">
+        <div className="flex items-center justify-between opacity-40">
+           <h3 className="text-[10px] font-black uppercase tracking-[0.3em]">Investments</h3>
+           <ChevronDown size={14} />
+        </div>
+        
         {holdingStocks.map((stock) => {
           const holding = holdings.find(h => h.symbol === stock.symbol);
           const totalVal = (holding?.shares || 0) * stock.regularMarketPrice;
+          const isStkPos = stock.regularMarketChange >= 0;
+          
           return (
             <div 
               key={stock.symbol}
               onClick={() => navigate(`/stock/${stock.symbol}`)}
-              className="flex items-center justify-between active:scale-[0.98] transition-all group cursor-pointer"
+              className="flex items-center justify-between group cursor-pointer py-1"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center p-2.5 shadow-xl border border-white/10 group-hover:scale-105 transition-transform">
-                  <img src={getLogoUrl(stock.symbol)} alt={stock.symbol} className="w-full h-full object-contain" />
+              <div className="flex items-center gap-5">
+                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center p-2 group-hover:scale-110 transition-transform">
+                  <img src={getLogoUrl(stock.symbol)} alt={stock.symbol} className="w-full h-full object-contain grayscale" />
                 </div>
                 <div>
-                  <h4 className="text-white font-black text-lg leading-tight">{stock.symbol}</h4>
-                  <p className="text-neutral-500 text-sm font-medium">{holding?.shares} shares</p>
+                  <h4 className="text-white font-black text-lg leading-none mb-1">{stock.symbol}</h4>
+                  <p className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">{holding?.shares} units</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-white font-black text-lg leading-tight">
-                  {totalVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
+                <p className="text-white font-black text-lg leading-none mb-1 tabular-nums">
+                  {totalVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <div className={`text-sm font-bold ${stock.regularMarketChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {stock.regularMarketChange >= 0 ? '+' : ''}{stock.regularMarketChangePercent.toFixed(2)}%
+                <div className={`text-[10px] font-black tracking-widest ${isStkPos ? 'text-emerald-500' : 'text-red-500'}`}>
+                  {isStkPos ? '+' : ''}{stock.regularMarketChangePercent.toFixed(2)}%
                 </div>
               </div>
             </div>
           );
         })}
+        
         {holdingStocks.length === 0 && (
-          <p className="text-neutral-600 text-center py-4 font-medium italic">No investments yet.</p>
+          <p className="text-neutral-800 text-center py-10 font-black uppercase text-[10px] tracking-widest">No Active Positions</p>
         )}
       </section>
 
-      {/* Bottom Floating Action Buttons */}
-      <div className="fixed bottom-24 left-6 right-6 flex gap-4 max-w-2xl mx-auto z-50">
+      {/* Simplified Bottom Dock */}
+      <div className="fixed bottom-10 left-8 right-8 flex gap-3 max-w-xl mx-auto z-50">
         <button 
           onClick={() => navigate('/search')}
-          className="flex-1 h-16 bg-neutral-900 border border-white/5 rounded-2xl flex items-center justify-between px-6 active:scale-95 transition-all shadow-2xl backdrop-blur-xl"
+          className="flex-1 h-14 bg-white text-black rounded-2xl flex items-center justify-between px-6 active:scale-95 transition-all shadow-xl"
         >
-          <span className="text-white font-black text-lg">Invest</span>
-          <SearchIcon size={22} className="text-neutral-400" />
+          <span className="font-black text-xs uppercase tracking-widest">Invest</span>
+          <SearchIcon size={16} />
         </button>
         <button 
-          className="flex-1 h-16 bg-neutral-900 border border-white/5 rounded-2xl flex items-center justify-between px-6 active:scale-95 transition-all shadow-2xl backdrop-blur-xl"
+          className="w-14 h-14 bg-neutral-900 border border-white/5 rounded-2xl flex items-center justify-center active:scale-95 transition-all shadow-xl"
         >
-          <span className="text-white font-black text-lg">Transfer</span>
-          <ArrowRight size={22} className="text-neutral-400" />
+          <ArrowRight size={18} className="text-white" />
         </button>
       </div>
     </div>
