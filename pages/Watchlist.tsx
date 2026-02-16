@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, TrendingUp, TrendingDown, ChevronLeft } from 'lucide-react';
@@ -28,11 +29,11 @@ export default function Watchlist() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col pb-24 md:pb-0">
+    <div className="min-h-screen bg-black flex flex-col pb-24">
       <div className="px-6 pt-8 pb-6 sticky top-0 bg-black/80 backdrop-blur-md z-30 flex items-center gap-4">
         <button 
           onClick={handleBack}
-          className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center md:hidden active:scale-90"
+          className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center active:scale-90"
         >
           <ChevronLeft className="text-white" size={24} />
         </button>

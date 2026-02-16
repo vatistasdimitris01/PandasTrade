@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search as SearchIcon, 
   ArrowRight,
-  ChevronDown
+  ChevronDown,
+  Star
 } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts';
 import { useUserStore } from '../lib/store';
@@ -67,11 +68,22 @@ export default function Home() {
 
   return (
     <div className="pb-44 pt-safe px-8 max-w-xl mx-auto min-h-screen bg-black">
-      {/* Ultra-Minimal Header */}
+      {/* Ultra-Minimal Header with contextual nav */}
       <header className="flex items-center justify-between pt-12 mb-12">
         <h1 className="text-white text-2xl font-black tracking-tight">Wealth</h1>
-        <div className="w-8 h-8 rounded-full overflow-hidden grayscale hover:grayscale-0 transition-all cursor-pointer">
-          <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={() => navigate('/watchlist')}
+            className="text-neutral-600 hover:text-white transition-colors active:scale-90"
+          >
+            <Star size={20} />
+          </button>
+          <div 
+            onClick={() => navigate('/settings')}
+            className="w-8 h-8 rounded-full overflow-hidden grayscale hover:grayscale-0 transition-all cursor-pointer border border-white/10 active:scale-90"
+          >
+            <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
+          </div>
         </div>
       </header>
 

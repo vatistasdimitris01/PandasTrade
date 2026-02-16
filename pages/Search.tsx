@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Search as SearchIcon, TrendingUp, Sparkles } from 'lucide-react';
-import { getAllStocks, getLogoUrl } from '../lib/stockData';
+import { getAllStocks, getLogoUrl, StockData } from '../lib/stockData';
 import { useUserStore } from '../lib/store';
 
 export default function Search() {
@@ -28,8 +27,8 @@ export default function Search() {
   const popularStocks = stocks.slice(0, 5);
   const suggestedStocks = stocks.slice(5, 10);
 
-  // Added key?: string to props type to fix TS error when component is used in a map() with a key prop
-  const StockCard = ({ stock, compact = false }: { stock: any, compact?: boolean, key?: string }) => (
+  // Fix: Explicitly typed StockCard as React.FC to handle 'key' prop in lists and used StockData type
+  const StockCard: React.FC<{ stock: StockData, compact?: boolean }> = ({ stock, compact = false }) => (
     <div
       onClick={() => navigate(`/stock/${stock.symbol}`)}
       className={`bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex-shrink-0 cursor-pointer md:hover:bg-neutral-800 transition-colors active:scale-95 ${compact ? 'w-40' : 'w-48'}`}
@@ -47,13 +46,13 @@ export default function Search() {
   );
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center pb-24 md:pb-0">
+    <div className="min-h-screen bg-black flex flex-col items-center pb-24">
       <div className="w-full max-w-5xl flex flex-col min-h-screen">
         <div className="px-6 pt-8 pb-4 lg:pt-12 sticky top-0 bg-black/80 backdrop-blur-md z-30">
           <div className="flex items-center gap-4 mb-6 lg:mb-8">
             <button 
               onClick={handleBack}
-              className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center md:hover:bg-neutral-800 transition-colors md:hidden active:scale-90 transform duration-150"
+              className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center active:scale-90 transform duration-150"
             >
               <ChevronLeft className="text-white" size={24} />
             </button>
