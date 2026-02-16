@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { LayoutDashboard, Search, Settings, Star } from 'lucide-react';
@@ -33,16 +34,16 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     return (
       <Link
         to={to}
-        className={`group flex items-center md:justify-center lg:justify-start gap-3 px-4 py-3 mx-2 lg:mx-4 rounded-xl transition-all duration-200 active:scale-95 ${
+        className={`group flex items-center md:justify-center lg:justify-start gap-3 px-4 py-3 mx-2 lg:mx-3 rounded-2xl transition-all duration-300 active:scale-95 ${
           isActive
-            ? 'bg-white text-black shadow-lg shadow-white/5'
-            : 'text-neutral-400 md:hover:text-white md:hover:bg-neutral-900'
+            ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] border border-white/10'
+            : 'text-neutral-500 md:hover:text-white md:hover:bg-white/5'
         }`}
       >
-        <div className={`transition-transform duration-200 ${isActive ? 'scale-100' : 'md:group-hover:scale-110'}`}>
+        <div className={`transition-transform duration-300 ${isActive ? 'scale-110 text-emerald-400' : 'md:group-hover:scale-110'}`}>
           {icon}
         </div>
-        <span className="font-semibold text-sm tracking-wide hidden lg:block">{label}</span>
+        <span className={`font-bold text-sm tracking-wide hidden lg:block ${isActive ? 'text-white' : ''}`}>{label}</span>
       </Link>
     );
   };
@@ -52,70 +53,78 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     return (
       <Link
         to={to}
-        className={`flex flex-1 flex-col items-center justify-center py-3 transition-all active:scale-75 ${
-          isActive ? 'text-white' : 'text-neutral-500'
+        className={`flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-300 active:scale-75 ${
+          isActive ? 'bg-white/10 text-emerald-400 shadow-lg border border-white/10' : 'text-neutral-500'
         }`}
       >
-        <div className="mb-0.5">{icon}</div>
+        <div className={isActive ? 'scale-110' : ''}>{icon}</div>
       </Link>
     );
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex font-sans selection:bg-neutral-800 selection:text-white pb-24 md:pb-0">
-      {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col md:w-20 lg:w-72 h-screen sticky top-0 border-r border-neutral-900/50 bg-black/50 backdrop-blur-xl z-50 transition-all duration-300">
-        <div className="px-0 lg:px-8 pt-10 pb-12 flex justify-center lg:justify-start">
-           <div className="flex items-center gap-2">
-             <div className="flex items-center justify-center flex-shrink-0 bg-neutral-900 rounded-lg p-1.5 shadow-lg border border-neutral-800">
+    <div className="min-h-screen bg-black text-white flex font-sans selection:bg-neutral-800 selection:text-white">
+      
+      {/* Background Glows for Glass Effect */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/10 rounded-full blur-[120px]" />
+      </div>
+
+      {/* Sidebar - Desktop Floating Glass */}
+      <aside className="hidden md:flex flex-col md:w-20 lg:w-64 fixed left-6 top-6 bottom-6 bg-neutral-900/30 backdrop-blur-2xl rounded-[2.5rem] border border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] z-50 transition-all duration-500 overflow-hidden">
+        <div className="px-0 lg:px-6 pt-10 pb-10 flex justify-center lg:justify-start">
+           <div className="flex items-center gap-3">
+             <div className="flex items-center justify-center flex-shrink-0 bg-white/5 rounded-2xl p-2 shadow-inner border border-white/10">
                <TradingLogo size={24} />
              </div>
-             <h1 className="font-bold text-xl tracking-tight text-white hidden lg:block mt-0.5">
-              Pandas<span className="text-neutral-600">Trade</span>
+             <h1 className="font-black text-xl tracking-tighter text-white hidden lg:block">
+              Pandas<span className="text-emerald-500">Trade</span>
             </h1>
            </div>
         </div>
         
-        <nav className="flex-1 space-y-4 lg:space-y-2">
-          <NavItem to="/" icon={<LayoutDashboard size={24} className="lg:w-5 lg:h-5" />} label="Overview" />
-          <NavItem to="/search" icon={<Search size={24} className="lg:w-5 lg:h-5" />} label="Market" />
-          <NavItem to="/watchlist" icon={<Star size={24} className="lg:w-5 lg:h-5" />} label="Watchlist" />
-          <NavItem to="/settings" icon={<Settings size={24} className="lg:w-5 lg:h-5" />} label="Settings" />
+        <nav className="flex-1 space-y-2">
+          <NavItem to="/" icon={<LayoutDashboard size={22} />} label="Overview" />
+          <NavItem to="/search" icon={<Search size={22} />} label="Market" />
+          <NavItem to="/watchlist" icon={<Star size={22} />} label="Watchlist" />
+          <NavItem to="/settings" icon={<Settings size={22} />} label="Settings" />
         </nav>
 
-        <div className="p-2 lg:p-4 lg:mx-4 mb-6 flex justify-center lg:block">
-           <div className="bg-transparent lg:bg-neutral-900/50 rounded-2xl p-0 lg:p-4 lg:border lg:border-neutral-800/50 lg:backdrop-blur-md md:hover:bg-neutral-900/80 transition-colors cursor-pointer group">
-             <div className="flex items-center gap-3 lg:mb-4 justify-center lg:justify-start">
-                <div className="w-10 h-10 rounded-full bg-neutral-800 overflow-hidden ring-2 ring-black group-hover:ring-white/20 transition-all">
+        {/* Desktop Profile Card - Floating style */}
+        <div className="p-3 lg:p-4 mb-4">
+           <div className="bg-white/5 rounded-3xl p-3 lg:p-4 border border-white/5 backdrop-blur-md group cursor-pointer active:scale-95 transition-all">
+             <div className="flex items-center gap-3 justify-center lg:justify-start">
+                <div className="w-10 h-10 rounded-2xl overflow-hidden border border-white/10 ring-2 ring-black group-hover:ring-emerald-500/30 transition-all">
                   <img src={avatar} alt={name} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0 hidden lg:block">
-                  <p className="text-sm font-bold text-white truncate">{name}</p>
-                  <p className="text-xs text-neutral-500 truncate">Pro Account</p>
+                  <p className="text-xs font-black text-white truncate uppercase tracking-widest">{name}</p>
+                  <p className="text-[10px] text-emerald-500 font-bold truncate uppercase tracking-tighter">Pro member</p>
                 </div>
              </div>
-             <div className="space-y-1 hidden lg:block">
-                <div className="flex justify-between items-center text-xs text-neutral-500">
-                  <span>Buying Power</span>
-                </div>
-                <div className="text-lg font-bold text-white font-mono tracking-tight">
-                  {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{currency}
-                </div>
+             <div className="mt-4 space-y-1 hidden lg:block">
+                <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Balance</p>
+                <p className="text-lg font-black text-white tracking-tighter">
+                  {currency}{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
              </div>
            </div>
         </div>
       </aside>
 
-      {/* Mobile Dock - Optimized for iOS Home Indicator */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-neutral-900/50 z-50 flex items-center justify-between px-6 pb-safe">
+      {/* Mobile Dock - Floating Glass Pill */}
+      <div className="md:hidden fixed bottom-8 left-6 right-6 h-20 bg-neutral-900/40 backdrop-blur-2xl border border-white/10 z-[100] flex items-center justify-around px-4 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
         <MobileDockItem to="/" icon={<LayoutDashboard size={24} />} />
         <MobileDockItem to="/search" icon={<Search size={24} />} />
         <MobileDockItem to="/watchlist" icon={<Star size={24} />} />
         <MobileDockItem to="/settings" icon={<Settings size={24} />} />
       </div>
 
-      <main className="flex-1 w-full min-h-screen bg-black overflow-x-hidden pt-safe">
-        {children}
+      <main className="flex-1 w-full min-h-screen bg-transparent md:ml-28 lg:ml-72 relative z-10 pt-safe transition-all duration-500">
+        <div className="max-w-7xl mx-auto">
+          {children}
+        </div>
       </main>
     </div>
   );
