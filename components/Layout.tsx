@@ -34,9 +34,9 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     return (
       <Link
         to={to}
-        className={`group flex items-center md:justify-center lg:justify-start gap-3 px-3 py-2.5 mx-2 lg:mx-3 rounded-xl transition-all duration-300 active:scale-95 ${
+        className={`group flex items-center md:justify-center lg:justify-start gap-3 px-4 py-3 transition-all duration-300 active:scale-95 ${
           isActive
-            ? 'bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] border border-white/10'
+            ? 'text-white bg-white/5'
             : 'text-neutral-500 md:hover:text-white md:hover:bg-white/5'
         }`}
       >
@@ -53,10 +53,10 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     return (
       <Link
         to={to}
-        className={`flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all duration-300 active:scale-75 ${
+        className={`flex flex-col items-center justify-center flex-1 py-3 transition-all duration-300 active:scale-75 ${
           isActive 
-            ? 'bg-white/10 text-emerald-400 shadow-xl border border-white/20 ring-1 ring-white/5' 
-            : 'text-neutral-500'
+            ? 'text-white' 
+            : 'text-neutral-600'
         }`}
       >
         <div className={isActive ? 'scale-110' : ''}>{icon}</div>
@@ -67,18 +67,17 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-black text-white flex font-sans selection:bg-neutral-800 selection:text-white">
       
-      {/* Background Glows for Glass Effect */}
+      {/* Background Glows for Subtle Depth */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/10 rounded-full blur-[120px]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-900/5 rounded-full blur-[120px]" />
       </div>
 
-      {/* Sidebar - Desktop Floating Glass (Mini Style) */}
-      <aside className="hidden md:flex flex-col md:w-20 lg:w-60 fixed left-5 top-5 bottom-5 bg-neutral-950/20 backdrop-blur-3xl rounded-[2rem] border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] z-50 transition-all duration-500 overflow-hidden">
-        <div className="px-0 lg:px-6 pt-8 pb-8 flex justify-center lg:justify-start">
+      {/* Sidebar - Desktop Pinned to Edge */}
+      <aside className="hidden md:flex flex-col md:w-20 lg:w-64 fixed left-0 top-0 bottom-0 bg-neutral-950/80 backdrop-blur-xl border-r border-white/5 z-50 transition-all duration-500 overflow-hidden">
+        <div className="px-4 lg:px-6 pt-10 pb-10 flex justify-center lg:justify-start">
            <div className="flex items-center gap-3">
-             <div className="flex items-center justify-center flex-shrink-0 bg-white/5 rounded-xl p-2 border border-white/10">
-               <TradingLogo size={20} />
+             <div className="flex items-center justify-center flex-shrink-0">
+               <TradingLogo size={24} />
              </div>
              <h1 className="font-black text-lg tracking-tighter text-white hidden lg:block">
               Pandas<span className="text-emerald-500">Trade</span>
@@ -86,44 +85,36 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
            </div>
         </div>
         
-        <nav className="flex-1 space-y-1.5">
+        <nav className="flex-1">
           <NavItem to="/" icon={<LayoutDashboard size={20} />} label="Overview" />
           <NavItem to="/search" icon={<Search size={20} />} label="Market" />
           <NavItem to="/watchlist" icon={<Star size={20} />} label="Watchlist" />
           <NavItem to="/settings" icon={<Settings size={20} />} label="Settings" />
         </nav>
 
-        {/* Desktop Profile Card */}
-        <div className="p-3 mb-3">
-           <div className="bg-white/5 rounded-2xl p-2.5 lg:p-3 border border-white/5 backdrop-blur-md group cursor-pointer active:scale-95 transition-all">
-             <div className="flex items-center gap-2.5 justify-center lg:justify-start">
-                <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/10 ring-1 ring-black group-hover:ring-emerald-500/30 transition-all">
-                  <img src={avatar} alt={name} className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0 hidden lg:block">
-                  <p className="text-[10px] font-black text-white truncate uppercase tracking-widest leading-none">{name}</p>
-                  <p className="text-[9px] text-emerald-500 font-bold truncate uppercase tracking-tighter mt-1">Pro</p>
-                </div>
-             </div>
-             <div className="mt-3 space-y-0.5 hidden lg:block">
-                <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Balance</p>
-                <p className="text-base font-black text-white tracking-tighter">
-                  {currency}{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-             </div>
+        {/* Desktop Profile Card (Bottom Pinned) */}
+        <div className="mt-auto border-t border-white/5 p-4">
+           <div className="flex items-center gap-3 justify-center lg:justify-start">
+              <div className="w-10 h-10 rounded-xl overflow-hidden grayscale hover:grayscale-0 transition-all cursor-pointer">
+                <img src={avatar} alt={name} className="w-full h-full object-cover" />
+              </div>
+              <div className="hidden lg:block min-w-0">
+                <p className="text-[10px] font-black text-white truncate uppercase tracking-widest leading-none">{name}</p>
+                <p className="text-emerald-500 text-[10px] font-bold mt-1 uppercase tracking-tighter">Pro Status</p>
+              </div>
            </div>
         </div>
       </aside>
 
-      {/* Mobile Dock - Compact Floating Glass Pill */}
-      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm h-14 bg-neutral-950/20 backdrop-blur-3xl border border-white/10 z-[100] flex items-center justify-around px-2 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
-        <MobileDockItem to="/" icon={<LayoutDashboard size={18} />} />
-        <MobileDockItem to="/search" icon={<Search size={18} />} />
-        <MobileDockItem to="/watchlist" icon={<Star size={18} />} />
-        <MobileDockItem to="/settings" icon={<Settings size={18} />} />
+      {/* Mobile Dock - Bottom Pinned Tab Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-neutral-950/80 backdrop-blur-xl border-t border-white/5 z-[100] flex items-center justify-around px-2 pb-safe shadow-[0_-1px_10px_rgba(0,0,0,0.5)]">
+        <MobileDockItem to="/" icon={<LayoutDashboard size={20} />} />
+        <MobileDockItem to="/search" icon={<Search size={20} />} />
+        <MobileDockItem to="/watchlist" icon={<Star size={20} />} />
+        <MobileDockItem to="/settings" icon={<Settings size={20} />} />
       </div>
 
-      <main className="flex-1 w-full min-h-screen bg-transparent md:ml-24 lg:ml-64 relative z-10 pt-safe transition-all duration-500">
+      <main className="flex-1 w-full min-h-screen bg-transparent md:ml-20 lg:ml-64 relative z-10 pt-safe transition-all duration-500">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>
