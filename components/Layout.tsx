@@ -116,11 +116,11 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
       </aside>
 
       {/* Mobile Dock - Compact Floating Glass Pill */}
-      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm h-16 bg-neutral-950/20 backdrop-blur-3xl border border-white/10 z-[100] flex items-center justify-around px-2 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
-        <MobileDockItem to="/" icon={<LayoutDashboard size={20} />} />
-        <MobileDockItem to="/search" icon={<Search size={20} />} />
-        <MobileDockItem to="/watchlist" icon={<Star size={20} />} />
-        <MobileDockItem to="/settings" icon={<Settings size={20} />} />
+      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm h-14 bg-neutral-950/20 backdrop-blur-3xl border border-white/10 z-[100] flex items-center justify-around px-2 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
+        <MobileDockItem to="/" icon={<LayoutDashboard size={18} />} />
+        <MobileDockItem to="/search" icon={<Search size={18} />} />
+        <MobileDockItem to="/watchlist" icon={<Star size={18} />} />
+        <MobileDockItem to="/settings" icon={<Settings size={18} />} />
       </div>
 
       <main className="flex-1 w-full min-h-screen bg-transparent md:ml-24 lg:ml-64 relative z-10 pt-safe transition-all duration-500">
